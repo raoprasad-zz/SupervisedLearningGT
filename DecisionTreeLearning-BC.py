@@ -16,25 +16,10 @@ class decisionTreeLearner():
     def __init__(self, pathToData):
         self.dataFilePath = pathToData
 
-    def plotBCDataCharacteristics(self):
-        for col in self.df.columns:
-            if col=='Class':
-                break
-            x1 = self.df.loc[self.df.Class==2, col]
-            x2 = self.df.loc[self.df.Class==4, col]
-            bins = np.linspace(0, 10, 20)
-            plt.hist(x1, bins, alpha=0.5, label='Benign')
-            plt.hist(x2, bins, alpha=0.5, label='Malignant')
-            plt.legend(loc='upper right')
-            plt.xlabel(col)
-            plt.ylabel('Sample counts')
-            filename = '{}/images/{}_{}_{}_dist.png'.format('.', 'DT', 'BC',col)
-            plt.savefig(filename, format='png', dpi=150)
-            plt.close()
-
     def loadBCData(self):
         self.df = pd.read_csv(self.dataFilePath, header=1, index_col=0)
 
+    # Code utilized from Scikit learn.
     def plot_confusion_matrix(self,y_true, y_pred, classes,
                               normalize=False,
                               title=None,
@@ -215,31 +200,23 @@ class decisionTreeLearner():
         self.labels = np.array(self.df.iloc[:, -1])
 
         # Split the data into a training set and a test set
-        X_train, X_test, y_train, y_test = train_test_split(self.features, self.labels, test_size=0.1, random_state=0, shuffle=False)
+        X_train, X_test, y_train, y_test = train_test_split(self.features, self.labels, test_size=0.1, random_state=0, shuffle=True, stratify=self.labels)
         scaler=preprocessing.StandardScaler().fit(X_train)
         X_train=scaler.transform(X_train)
         X_test=scaler.transform(X_test)
 
-        self.classifier = tree.DecisionTreeClassifier()
+        self.classifier = tree.DecisionTreeClassifier(class_weight='balanced')
 
-        cv = 10;
+        cv = 5;
         self.plot_learning_curve(self.classifier,"Learning curve", X_train,y_train,cv=cv)
         filename = '{}/images/{}_{}_LC.png'.format('.', 'DT', 'BC')
         plt.savefig(filename, format='png', dpi=150)
         plt.close()
 
-        self.plot_validation_curve(tree.DecisionTreeClassifier(),X_train,y_train,"max_depth", np.arange(1,11,1), cv=cv)
-        self.plot_validation_curve(tree.DecisionTreeClassifier(),X_train,y_train,"min_samples_leaf", np.arange(1,50,1), cv=cv)
-        self.plot_validation_curve(tree.DecisionTreeClassifier(),X_train,y_train,"min_samples_split", np.arange(3,50,1), cv=cv)
-        self.plot_validation_curve(tree.DecisionTreeClassifier(),X_train,y_train,"max_features", np.arange(2,10,1), cv=cv)
+        self.plot_validation_curve(tree.DecisionTreeClassifier(class_weight='balanced'),X_train,y_train,"max_depth", np.arange(1,11,1), cv=cv)
+        self.plot_validation_curve(tree.DecisionTreeClassifier(class_weight='balanced'),X_train,y_train,"min_samples_split", np.arange(50,3,-1), cv=cv)
 
-
-        parameters = {"min_samples_split": np.arange(3,30,1)}
-        clf = GridSearchCV(tree.DecisionTreeClassifier(), parameters, cv=cv)
-        clf.fit(X_train, y_train)
-        print(clf.best_params_)
-
-        self.classifier.set_params(**clf.best_params_)
+        self.classifier.set_params(min_samples_split=9, max_depth=4, class_weight='balanced')
         self.plot_learning_curve(self.classifier,"Learning curve-with optimised hyperparameter", X_train,y_train,cv=cv)
         filename = '{}/images/{}_{}_LC(optimized).png'.format('.', 'DT', 'BC')
         plt.savefig(filename, format='png', dpi=150)
