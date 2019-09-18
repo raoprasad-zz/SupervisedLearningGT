@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-from collections import Counter
 import matplotlib.pyplot as plt
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
@@ -12,7 +11,7 @@ from matplotlib.ticker import MaxNLocator
 from sklearn.model_selection import validation_curve
 from sklearn.model_selection import GridSearchCV
 
-class decisionTreeLearner():
+class decisionTreeLearnerBC():
     def __init__(self, pathToData):
         self.dataFilePath = pathToData
 
@@ -213,8 +212,8 @@ class decisionTreeLearner():
         plt.savefig(filename, format='png', dpi=150)
         plt.close()
 
-        self.plot_validation_curve(tree.DecisionTreeClassifier(class_weight='balanced'),X_train,y_train,"max_depth", np.arange(1,11,1), cv=cv)
-        self.plot_validation_curve(tree.DecisionTreeClassifier(class_weight='balanced'),X_train,y_train,"min_samples_split", np.arange(50,3,-1), cv=cv)
+        self.plot_validation_curve(self.classifier,X_train,y_train,"max_depth", np.arange(1,11,1), cv=cv)
+        self.plot_validation_curve(self.classifier,X_train,y_train,"min_samples_split", np.arange(50,3,-1), cv=cv)
 
         self.classifier.set_params(min_samples_split=9, max_depth=4, class_weight='balanced')
         self.plot_learning_curve(self.classifier,"Learning curve-with optimised hyperparameter", X_train,y_train,cv=cv)
@@ -242,9 +241,3 @@ class decisionTreeLearner():
         filename = '{}/images/{}_{}_CM_Normalized.png'.format('.', 'DT', 'BC')
         plt.savefig(filename, format='png', dpi=250,bbox_inches='tight')
         plt.close()
-
-
-if __name__ == '__main__':
-    dtlearner = decisionTreeLearner('./Datasets/Breast Cancer Classification/breast-cancer-wisconsin.csv')
-    dtlearner.loadBCData()
-    dtlearner.learn()
