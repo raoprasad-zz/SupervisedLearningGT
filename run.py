@@ -1,6 +1,10 @@
 import argparse
 
 from DecisionTreeLearningBC import decisionTreeLearnerBC
+from DecisionTreeLearningLetter import decisionTreeLearnerLetter
+from DecisionTreeLearningAbalone import decisionTreeLearnerAbalone
+from DecisionTreeLearningTraffic import decisionTreeLearnerTraffic
+
 from KNNLearningBC import knnLearnerBC
 from ANNLearningBC import annLearnerBC
 
@@ -12,24 +16,41 @@ if __name__ == '__main__':
     parser.add_argument('--ann', action='store_true', help='ANN')
     parser.add_argument('--boosting', action='store_true', help='Boosting')
     parser.add_argument('--svm', action='store_true', help='SVM')
+    parser.add_argument('--bc', action='store_true', help='Run on BC dataset')
+    parser.add_argument('--ab', action='store_true', help='Run on Abalone dataset')
+    parser.add_argument('--allAlgo', action='store_true', help='Run all algo on all dataset')
+    parser.add_argument('--allDataset', action='store_true', help='Run all algo on all dataset')
 
     args = parser.parse_args()
-    if args.dt:
-        dtlearner = decisionTreeLearnerBC('./Datasets/Breast Cancer Classification/breast-cancer-wisconsin.csv')
-        dtlearner.loadBCData()
-        dtlearner.learn()
+    alllearners = set()
+    if args.allDataset and args.allAlgo:
+        alllearners.add(decisionTreeLearnerBC('./Datasets/Breast Cancer Classification/breast-cancer-wisconsin.csv'))
+        alllearners.add(decisionTreeLearnerLetter('./Datasets/LetterRecognition/letter-recognition.csv'))
+        alllearners.add(decisionTreeLearnerTraffic('./Datasets/Interstate Traffic/Metro_Interstate_Traffic_Volume.csv'))
+        alllearners.add(decisionTreeLearnerAbalone('./Datasets/Abalone/abalone.csv'))
 
-    if args.knn:
-        knnlearner = knnLearnerBC('./Datasets/Breast Cancer Classification/breast-cancer-wisconsin.csv')
-        knnlearner.loadBCData()
-        knnlearner.learn()
 
-    if args.ann:
-        annlearner = annLearnerBC('./Datasets/Breast Cancer Classification/breast-cancer-wisconsin.csv')
-        annlearner.loadBCData()
-        annlearner.learn()
-
-    # if args.boosting:
+    # elif args.allDataset:
+    #     if args.bc:
+    #         learner = decisionTreeLearnerBC('./Datasets/Breast Cancer Classification/breast-cancer-wisconsin.csv')
+    #     elif args.letter:
+    #         learner = decisionTreeLearnerLetter('./Datasets/LetterRecognition/letter-recognition.csv')
+    #     elif args.letter:
+    #         learner = decisionTreeLearnerLetter('./Datasets/LetterRecognition/letter-recognition.csv')
     #
     #
-    # if args.svm:
+    # if args.dt or args.all:
+    #     if args.bc:
+    #         learner = decisionTreeLearnerBC('./Datasets/Breast Cancer Classification/breast-cancer-wisconsin.csv')
+    #     elif args.ab:
+    #         learner = decisionTreeLearnerLetter('./Datasets/LetterRecognition/letter-recognition.csv')
+    #
+    # if args.knn:
+    #     learner = knnLearnerBC('./Datasets/Breast Cancer Classification/breast-cancer-wisconsin.csv')
+    #
+    # if args.ann:
+    #     learner = annLearnerBC('./Datasets/Breast Cancer Classification/breast-cancer-wisconsin.csv')
+
+    for lrnr in alllearners:
+        lrnr.loadData()
+        lrnr.learn()

@@ -11,11 +11,11 @@ from matplotlib.ticker import MaxNLocator
 from sklearn.model_selection import validation_curve
 from sklearn.model_selection import GridSearchCV
 
-class decisionTreeLearnerBC():
+class decisionTreeLearnerLetter():
     def __init__(self, pathToData):
         self.dataFilePath = pathToData
         self.algoname = 'DT'
-        self.datasetName = 'BC'
+        self.datasetName = 'Letter'
 
     def loadData(self):
         self.df = pd.read_csv(self.dataFilePath, header=1, index_col=0)
@@ -76,7 +76,7 @@ class decisionTreeLearnerBC():
     # Code utilized from Scikit learn.
     def plot_learning_curve(self,estimator, title, X, y, ylim=None, cv=None,
                             n_jobs=None, train_sizes=np.append(np.linspace(0.05, 0.1, 10, endpoint=False),
-                                                               np.linspace(0.1, 1, 10, endpoint=True)),shuffle=True):
+                                                               np.linspace(0.1, 1, 10, endpoint=True)), shuffle=True):
         """
         Generate a simple plot of the test and training learning curve.
 
@@ -185,67 +185,71 @@ class decisionTreeLearnerBC():
                          test_scores_mean + test_scores_std, alpha=0.2,
                          color="navy")
         plt.legend(loc="best")
-        filename = '{}/images/{}/{}/{}_{}_{}_MCC.png'.format('.', self.datasetName, self.algoname, self.datasetName, self.algoname,param_name)
+        filename = '{}/images/{}/{}/{}_{}_{}_MCC.png'.format('.', self.datasetName, self.algoname,self.datasetName, self.algoname, param_name)
         plt.savefig(filename, format='png', dpi=150)
 
         plt.close()
 
     def learn(self):
         label_encoder = preprocessing.LabelEncoder()
-        encode=self.df[['Class']].copy()
+        encode = self.df[['letter']].copy()
         encode = encode.apply(label_encoder.fit_transform)
-        self.df = self.df.drop(columns='Class')
+        self.df = self.df.drop(columns='letter')
         self.df = pd.concat([self.df, encode], axis=1)
-        self.df = self.df[( self.df[['Clump Thickness','Uniformity of Cell Size','Uniformity of Cell Shape','Marginal Adhesion','Single Epithelial Cell Size','Bare Nuclei','Bland Chromatin','Normal Nucleoli','Mitoses','Class']] != '?').all(axis=1)]
+
         self.features = np.array(self.df.iloc[:, 0:-1])
         self.labels = np.array(self.df.iloc[:, -1])
 
         # Split the data into a training set and a test set
-        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.features, self.labels, test_size=0.1, random_state=0, shuffle=True, stratify=self.labels)
-        scaler=preprocessing.StandardScaler().fit(self.X_train)
-        self.X_train=scaler.transform(self.X_train)
-        self.X_test=scaler.transform(self.X_test)
+        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.features, self.labels,
+                                                                                test_size=0.1, random_state=0,
+                                                                                shuffle=True, stratify=self.labels)
+        scaler = preprocessing.StandardScaler().fit(self.X_train)
+        self.X_train = scaler.transform(self.X_train)
+        self.X_test = scaler.transform(self.X_test)
 
         self.classifier = tree.DecisionTreeClassifier(class_weight='balanced')
 
         self.cv = 5;
-        self.plot_learning_curve(self.classifier,"Learning curve", self.X_train,self.y_train,cv=self.cv)
+        self.plot_learning_curve(self.classifier, "Learning curve", self.X_train, self.y_train, cv=self.cv)
         filename = '{}/images/{}/{}/{}_{}_LC.png'.format('.', self.datasetName, self.algoname, self.datasetName, self.algoname)
         plt.savefig(filename, format='png', dpi=150)
         plt.close()
 
-        self.plot_validation_curve(self.classifier,self.X_train,self.y_train,"max_depth", np.arange(1,100,1), cv=self.cv)
-        self.plot_validation_curve(self.classifier,self.X_train,self.y_train,"min_samples_split", np.arange(3,100,1), cv=self.cv)
+        self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "max_depth", np.arange(1, 100, 1),
+                                   cv=self.cv)
+        self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "min_samples_split",
+                                   np.arange(3, 100, 1), cv=self.cv)
 
         # params={min_samples_split=9, max_depth=4, class_weight='balanced'}
         # self.generateFinalModel()
 
-        def generateFinalModel(self, params):
-            self.classifier.set_params(params)
-            self.plot_learning_curve(self.classifier, "Learning curve-with optimised hyperparameter", self.X_train,
-                                     self.y_train,
-                                     cv=self.cv)
-            filename = '{}/images/{}/{}/{}_{}_LC(optimized).png'.format('.', self.datasetName, self.algoname, self.datasetName, self.algoname)
-            plt.savefig(filename, format='png', dpi=150)
-            plt.close()
+    def generateFinalModel(self, params):
+        self.classifier.set_params(params)
+        self.plot_learning_curve(self.classifier, "Learning curve-with optimised hyperparameter", self.X_train,
+                                 self.y_train,
+                                 cv=self.cv)
+        filename = '{}/images/{}/{}/{}_{}_LC(optimized).png'.format('.', self.datasetName, self.algoname, self.datasetName, self.algoname)
+        plt.savefig(filename, format='png', dpi=150)
+        plt.close()
 
-            self.classifier.fit(self.X_train, self.y_train)
-            y_pred = self.classifier.predict(self.X_test)
-            np.set_printoptions(precision=2)
+        self.classifier.fit(self.X_train, self.y_train)
+        y_pred = self.classifier.predict(self.X_test)
+        np.set_printoptions(precision=2)
 
-            uniq = np.unique(self.labels)
+        uniq = np.unique(self.labels)
 
-            # Plot non-normalized confusion matrix
-            self.plot_confusion_matrix(self.y_test, y_pred, uniq,
-                                       title='Confusion matrix, without normalization')
+        # Plot non-normalized confusion matrix
+        self.plot_confusion_matrix(self.y_test, y_pred, uniq,
+                                   title='Confusion matrix, without normalization')
 
-            filename = '{}/images/{}/{}/{}_{}_CM.png'.format('.', self.datasetName, self.algoname,self.datasetName, self.algoname)
-            plt.savefig(filename, format='png', dpi=150, bbox_inches='tight')
+        filename = '{}/images/{}/{}/{}_{}_CM.png'.format('.', self.datasetName, self.algoname, self.datasetName, self.algoname)
+        plt.savefig(filename, format='png', dpi=150, bbox_inches='tight')
 
-            # Plot normalized confusion matrix
-            self.plot_confusion_matrix(self.y_test, y_pred, uniq, normalize=True,
-                                       title='Normalized confusion matrix')
+        # Plot normalized confusion matrix
+        self.plot_confusion_matrix(self.y_test, y_pred, uniq, normalize=True,
+                                   title='Normalized confusion matrix')
 
-            filename = '{}/images/{}/{}/{}_{}_CM_Normalized.png'.format('.', self.datasetName, self.algoname, self.datasetName, self.algoname)
-            plt.savefig(filename, format='png', dpi=250, bbox_inches='tight')
-            plt.close()
+        filename = '{}/images/{}/{}/{}_{}_CM_Normalized.png'.format('.', self.datasetName, self.algoname, self.datasetName, self.algoname)
+        plt.savefig(filename, format='png', dpi=250, bbox_inches='tight')
+        plt.close()
