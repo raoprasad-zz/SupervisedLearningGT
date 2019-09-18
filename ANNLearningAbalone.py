@@ -9,13 +9,13 @@ from sklearn.model_selection import learning_curve
 from matplotlib.ticker import MaxNLocator
 from sklearn.model_selection import validation_curve
 from sklearn.model_selection import GridSearchCV
-from sklearn.neural_network import MLPClassifier as mlpc
+from sklearn.neural_network import MLPRegressor as mlpc
 
-class annLearnerBC():
+class annLearnerAbalone():
     def __init__(self, pathToData):
         self.dataFilePath = pathToData
         self.algoname = 'ANN'
-        self.datasetName = 'BC'
+        self.datasetName = 'Abalone'
 
     def loadData(self):
         self.df = pd.read_csv(self.dataFilePath, header=1, index_col=0)
@@ -163,7 +163,7 @@ class annLearnerBC():
     def plot_validation_curve(self, classifier, X, y, param_name, param_range=np.logspace(-6, -1, 5), cv=None):
         train_scores, test_scores = validation_curve(
             classifier, X, y, param_name=param_name, param_range=param_range,
-            cv=cv, scoring="accuracy", n_jobs=1)
+            cv=cv, scoring="r2", n_jobs=1)
         train_scores_mean = np.mean(train_scores, axis=1)
         train_scores_std = np.std(train_scores, axis=1)
         test_scores_mean = np.mean(test_scores, axis=1)
@@ -193,26 +193,27 @@ class annLearnerBC():
         plt.close()
 
     def learn(self):
-        label_encoder = preprocessing.LabelEncoder()
-        encode = self.df[['Class']].copy()
-        encode = encode.apply(label_encoder.fit_transform)
-        self.df = self.df.drop(columns='Class')
-        self.df = pd.concat([self.df, encode], axis=1)
-        self.df = self.df[(self.df[['Clump Thickness', 'Uniformity of Cell Size', 'Uniformity of Cell Shape',
-                                    'Marginal Adhesion', 'Single Epithelial Cell Size', 'Bare Nuclei',
-                                    'Bland Chromatin', 'Normal Nucleoli', 'Mitoses', 'Class']] != '?').all(axis=1)]
+        self.df = self.df.drop('Crings', axis=1)  # Crings added to investigate classification on this dataset
+        self.labels = self.df.Rings
+        self.df = self.df.drop('Rings', axis=1)
+        onehot = preprocessing.OneHotEncoder(dtype=np.int, sparse=True)
+        nominals = pd.DataFrame(onehot.fit_transform(self.df[['Sex']]).toarray(), columns=np.unique(self.df.Sex))
+        self.df = self.df.drop('Sex', axis=1)
+        self.df = pd.concat([self.df, nominals], axis=1)
+        self.df = pd.concat([self.df, self.labels], axis=1)
+
         self.features = np.array(self.df.iloc[:, 0:-1])
         self.labels = np.array(self.df.iloc[:, -1])
 
         # Split the data into a training set and a test set
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.features, self.labels,
                                                                                 test_size=0.1, random_state=0,
-                                                                                shuffle=True, stratify=self.labels)
+                                                                                shuffle=True)
         scaler = preprocessing.StandardScaler().fit(self.X_train)
         self.X_train = scaler.transform(self.X_train)
         self.X_test = scaler.transform(self.X_test)
 
-        self.classifier = mlpc(early_stopping=True)
+        self.classifier = mlpc(early_stopping=True, validation_fraction=0.5)
 
         self.cv = 5;
         self.plot_learning_curve(self.classifier, "Learning curve", self.X_train, self.y_train, cv=self.cv)

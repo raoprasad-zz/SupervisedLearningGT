@@ -11,11 +11,11 @@ from sklearn.model_selection import validation_curve
 from sklearn.model_selection import GridSearchCV
 from sklearn.neural_network import MLPClassifier as mlpc
 
-class annLearnerBC():
+class annLearnerLetter():
     def __init__(self, pathToData):
         self.dataFilePath = pathToData
         self.algoname = 'ANN'
-        self.datasetName = 'BC'
+        self.datasetName = 'Letter'
 
     def loadData(self):
         self.df = pd.read_csv(self.dataFilePath, header=1, index_col=0)
@@ -194,13 +194,11 @@ class annLearnerBC():
 
     def learn(self):
         label_encoder = preprocessing.LabelEncoder()
-        encode = self.df[['Class']].copy()
+        encode = self.df[['letter']].copy()
         encode = encode.apply(label_encoder.fit_transform)
-        self.df = self.df.drop(columns='Class')
+        self.df = self.df.drop(columns='letter')
         self.df = pd.concat([self.df, encode], axis=1)
-        self.df = self.df[(self.df[['Clump Thickness', 'Uniformity of Cell Size', 'Uniformity of Cell Shape',
-                                    'Marginal Adhesion', 'Single Epithelial Cell Size', 'Bare Nuclei',
-                                    'Bland Chromatin', 'Normal Nucleoli', 'Mitoses', 'Class']] != '?').all(axis=1)]
+
         self.features = np.array(self.df.iloc[:, 0:-1])
         self.labels = np.array(self.df.iloc[:, -1])
 
@@ -212,7 +210,7 @@ class annLearnerBC():
         self.X_train = scaler.transform(self.X_train)
         self.X_test = scaler.transform(self.X_test)
 
-        self.classifier = mlpc(early_stopping=True)
+        self.classifier = mlpc(early_stopping=True, validation_fraction=0.5)
 
         self.cv = 5;
         self.plot_learning_curve(self.classifier, "Learning curve", self.X_train, self.y_train, cv=self.cv)
