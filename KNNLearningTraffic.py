@@ -8,17 +8,18 @@ from sklearn.utils.multiclass import unique_labels
 from sklearn.model_selection import learning_curve
 from matplotlib.ticker import MaxNLocator
 from sklearn.model_selection import validation_curve
-from sklearn.neighbors import KNeighborsClassifier as knn
+from sklearn.neighbors import KNeighborsRegressor as knn
 from sklearn.model_selection import GridSearchCV
 
-class knnLearnerBC():
+class knnLearnerTraffic():
     def __init__(self, pathToData):
         self.dataFilePath = pathToData
         self.algoname = 'KNN'
-        self.datasetName = 'BC'
+        self.datasetName = 'Traffic'
 
     def loadData(self):
         self.df = pd.read_csv(self.dataFilePath, header=1, index_col=0)
+        self.df = self.df.drop('date_time', axis=1)
 
     # Code utilized from Scikit learn.
     def plot_confusion_matrix(self,y_true, y_pred, classes,
@@ -163,7 +164,7 @@ class knnLearnerBC():
     def plot_validation_curve(self, classifier, X, y, param_name, param_range=np.logspace(-6, -1, 5), cv=None):
         train_scores, test_scores = validation_curve(
             classifier, X, y, param_name=param_name, param_range=param_range,
-            cv=cv, scoring="accuracy", n_jobs=1)
+            cv=cv, scoring="r2", n_jobs=1)
         train_scores_mean = np.mean(train_scores, axis=1)
         train_scores_std = np.std(train_scores, axis=1)
         test_scores_mean = np.mean(test_scores, axis=1)
@@ -193,21 +194,32 @@ class knnLearnerBC():
         plt.close()
 
     def learn(self):
-        label_encoder = preprocessing.LabelEncoder()
-        encode = self.df[['Class']].copy()
-        encode = encode.apply(label_encoder.fit_transform)
-        self.df = self.df.drop(columns='Class')
-        self.df = pd.concat([self.df, encode], axis=1)
-        self.df = self.df[(self.df[['Clump Thickness', 'Uniformity of Cell Size', 'Uniformity of Cell Shape',
-                                    'Marginal Adhesion', 'Single Epithelial Cell Size', 'Bare Nuclei',
-                                    'Bland Chromatin', 'Normal Nucleoli', 'Mitoses', 'Class']] != '?').all(axis=1)]
+        self.labels = self.df.traffic_volume
+        self.df = self.df.drop('traffic_volume', axis=1)
+        onehot = preprocessing.OneHotEncoder(dtype=np.int, sparse=True)
+        encoded = pd.DataFrame(
+            onehot.fit_transform(self.df[['holiday', 'weather_main', 'weather_description']]).toarray(),
+            columns=np.concatenate(
+                (np.unique(self.df.holiday), np.unique(self.df.weather_main), np.unique(self.df.weather_description)),
+                axis=None))
+        self.df = self.df.drop('holiday', axis=1)
+        self.df = self.df.drop('weather_main', axis=1)
+        self.df = self.df.drop('weather_description', axis=1)
+        self.df = pd.concat([self.df, encoded], axis=1)
+        self.df = pd.concat([self.df, self.labels], axis=1)
+
         self.features = np.array(self.df.iloc[:, 0:-1])
         self.labels = np.array(self.df.iloc[:, -1])
 
         # Split the data into a training set and a test set
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.features, self.labels,
                                                                                 test_size=0.1, random_state=0,
-                                                                                shuffle=True, stratify=self.labels)
+                                                                                shuffle=True)
+        # sss = StratifiedShuffleSplit(n_splits=1,test_size=0.1, random_state=0)
+        # sss.get_n_splits(self.features, self.labels)
+        # for train_index, test_index in sss.split(self.features, self.labels):
+        #     self.X_train, self.X_test = self.features[train_index], self.features[test_index]
+        #     self.y_train, self.y_test = self.labels[train_index], self.labels[test_index]
         scaler = preprocessing.StandardScaler().fit(self.X_train)
         self.X_train = scaler.transform(self.X_train)
         self.X_test = scaler.transform(self.X_test)
