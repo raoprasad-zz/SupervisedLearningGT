@@ -31,7 +31,7 @@ class decisionTreeLearnerTraffic():
         self.datasetName = 'Traffic'
 
     def loadData(self):
-        self.df = pd.read_csv(self.dataFilePath, header=1)
+        self.df = pd.read_csv(self.dataFilePath, header=1, index_col=0)
         self.df = self.df.drop('date_time', axis=1)
 
     def plot_confusion_matrix(self,y_true, y_pred, classes,
