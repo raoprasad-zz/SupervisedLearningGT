@@ -238,8 +238,8 @@ class decisionTreeLearnerTraffic():
         plt.savefig(filename, format='png', dpi=150)
         plt.close()
 
-        self.plot_validation_curve(tree.DecisionTreeClassifier(),self.X_train,self.y_train,"max_depth", np.arange(1,100,1), cv=self.cv)
-        self.plot_validation_curve(tree.DecisionTreeClassifier(),self.X_train,self.y_train,"min_samples_split", np.arange(3,100,1), cv=self.cv)
+        self.plot_validation_curve(self.classifier,self.X_train,self.y_train,"max_depth", np.arange(1,100,1), cv=self.cv)
+        self.plot_validation_curve(self.classifier,self.X_train,self.y_train,"min_samples_split", np.arange(3,100,1), cv=self.cv)
 
         # params={min_samples_split=9, max_depth=4}
         # self.generateFinalModel()

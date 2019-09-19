@@ -10,6 +10,7 @@ from matplotlib.ticker import MaxNLocator
 from sklearn.model_selection import validation_curve
 from sklearn.model_selection import GridSearchCV
 from sklearn.neural_network import MLPClassifier as mlpc
+import itertools
 
 class annLearnerBC():
     def __init__(self, pathToData):
@@ -212,7 +213,8 @@ class annLearnerBC():
         self.X_train = scaler.transform(self.X_train)
         self.X_test = scaler.transform(self.X_test)
 
-        self.classifier = mlpc(early_stopping=True)
+        dimension = self.features.shape[1]
+        self.classifier = mlpc(early_stopping=True, hidden_layer_sizes=(dimension,dimension))
 
         self.cv = 5;
         self.plot_learning_curve(self.classifier, "Learning curve", self.X_train, self.y_train, cv=self.cv)
@@ -221,8 +223,13 @@ class annLearnerBC():
         plt.savefig(filename, format='png', dpi=150)
         plt.close()
 
-        self.plot_validation_curve(self.classifier,self.X_train,self.y_train,"hidden_layer_sizes",
-                                   [(10,), (20,), (30,), (40,), (50,), (100,), (200,)], cv=self.cv)
+
+        # self.plot_validation_curve(self.classifier,self.X_train,self.y_train,"hidden_layer_sizes",
+        #                            [x for x in itertools.product((dimension, dimension // 2, dimension * 2), repeat=1)],
+        #                            cv=self.cv)
+        # self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "hidden_layer_sizes",
+        #                            [x for x in itertools.product((dimension, dimension // 2, dimension * 2), repeat=2)],
+        #                            cv=self.cv)
         self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "activation",
                                    ['identity', 'logistic', 'tanh', 'relu'], cv=self.cv)
         #np.logspace(-5, 3, 20)
