@@ -16,9 +16,30 @@ class decisionTreeLearnerAbalone():
         self.dataFilePath = pathToData
         self.algoname = 'DT'
         self.datasetName = 'Abalone'
+        self.classifier = tree.DecisionTreeRegressor()
+        self.cv = 5;
 
     def loadData(self):
         self.df = pd.read_csv(self.dataFilePath, header=1, index_col=0)
+        self.df = self.df.drop('Crings', axis=1)  # Crings added to investigate classification on this dataset
+        self.labels = self.df.Rings
+        self.df = self.df.drop('Rings', axis=1)
+        onehot = preprocessing.OneHotEncoder(dtype=np.int, sparse=True)
+        nominals = pd.DataFrame(onehot.fit_transform(self.df[['Sex']]).toarray(), columns=np.unique(self.df.Sex))
+        self.df = self.df.drop('Sex', axis=1)
+        self.df = pd.concat([self.df, nominals], axis=1)
+        self.df = pd.concat([self.df, self.labels], axis=1)
+
+        self.features = np.array(self.df.iloc[:, 0:-1])
+        self.labels = np.array(self.df.iloc[:, -1])
+
+        # Split the data into a training set and a test set
+        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.features, self.labels,
+                                                                                test_size=0.1, random_state=0,
+                                                                                shuffle=True)
+        scaler = preprocessing.StandardScaler().fit(self.X_train)
+        self.X_train = scaler.transform(self.X_train)
+        self.X_test = scaler.transform(self.X_test)
 
     # Code utilized from Scikit learn.
     def plot_confusion_matrix(self,y_true, y_pred, classes,
@@ -191,27 +212,6 @@ class decisionTreeLearnerAbalone():
         plt.close()
 
     def learn(self):
-        self.df = self.df.drop('Crings', axis=1) # Crings added to investigate classification on this dataset
-        self.labels = self.df.Rings
-        self.df = self.df.drop('Rings', axis=1)
-        onehot = preprocessing.OneHotEncoder(dtype=np.int, sparse=True)
-        nominals = pd.DataFrame(onehot.fit_transform(self.df[['Sex']]).toarray(),columns=np.unique(self.df.Sex))
-        self.df = self.df.drop('Sex', axis=1)
-        self.df = pd.concat([self.df, nominals], axis=1)
-        self.df = pd.concat([self.df, self.labels], axis=1)
-
-        self.features = np.array(self.df.iloc[:, 0:-1])
-        self.labels = np.array(self.df.iloc[:, -1])
-
-        # Split the data into a training set and a test set
-        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.features, self.labels, test_size=0.1, random_state=0, shuffle=True)
-        scaler=preprocessing.StandardScaler().fit(self.X_train)
-        self.X_train=scaler.transform(self.X_train)
-        self.X_test=scaler.transform(self.X_test)
-
-        self.classifier = tree.DecisionTreeRegressor()
-
-        self.cv = 5;
         self.plot_learning_curve(self.classifier, "Learning curve", self.X_train, self.y_train, cv=self.cv)
         filename = '{}/images/{}/{}/{}_{}_LC.png'.format('.', self.datasetName, self.algoname, self.datasetName, self.algoname)
         plt.savefig(filename, format='png', dpi=150)
@@ -220,34 +220,33 @@ class decisionTreeLearnerAbalone():
         self.plot_validation_curve(self.classifier,self.X_train,self.y_train,"max_depth", np.arange(1,100,1), cv=self.cv)
         self.plot_validation_curve(self.classifier,self.X_train,self.y_train,"min_samples_split", np.arange(3,100,1), cv=self.cv)
 
-        #params={min_samples_split=9, max_depth=4}
-        #self.generateFinalModel()
-
-    def generateFinalModel(self, params):
-        self.classifier.set_params(params)
+    def generateFinalModel(self):
+        params = {'max_depth':5}
+        self.cv=5
+        self.classifier.set_params(**params)
         self.plot_learning_curve(self.classifier, "Learning curve-with optimised hyperparameter", self.X_train, self.y_train,
                                  cv=self.cv)
         filename = '{}/images/{}/{}/{}_{}_LC(optimized).png'.format('.', self.datasetName, self.algoname, self.datasetName, self.algoname)
         plt.savefig(filename, format='png', dpi=150)
         plt.close()
 
-        self.classifier.fit(self.X_train, self.y_train)
-        y_pred = self.classifier.predict(self.X_test)
-        np.set_printoptions(precision=2)
+        # self.classifier.fit(self.X_train, self.y_train)
+        # y_pred = self.classifier.predict(self.X_test)
+        # np.set_printoptions(precision=2)
+        #
+        # uniq = np.unique(self.labels)
 
-        uniq = np.unique(self.labels)
-
-        # Plot non-normalized confusion matrix
-        self.plot_confusion_matrix(self.y_test, y_pred, uniq,
-                                   title='Confusion matrix, without normalization')
-
-        filename = '{}/images/{}/{}/{}_{}_CM.png'.format('.', self.datasetName, self.algoname, self.datasetName, self.algoname)
-        plt.savefig(filename, format='png', dpi=150, bbox_inches='tight')
-
-        # Plot normalized confusion matrix
-        self.plot_confusion_matrix(self.y_test, y_pred, uniq, normalize=True,
-                                   title='Normalized confusion matrix')
-
-        filename = '{}/images/{}/{}/{}_{}_CM_Normalized.png'.format('.', self.datasetName, self.algoname, self.datasetName, self.algoname)
-        plt.savefig(filename, format='png', dpi=250, bbox_inches='tight')
-        plt.close()
+        # # Plot non-normalized confusion matrix
+        # self.plot_confusion_matrix(self.y_test, y_pred, uniq,
+        #                            title='Confusion matrix, without normalization')
+        #
+        # filename = '{}/images/{}/{}/{}_{}_CM.png'.format('.', self.datasetName, self.algoname, self.datasetName, self.algoname)
+        # plt.savefig(filename, format='png', dpi=150, bbox_inches='tight')
+        #
+        # # Plot normalized confusion matrix
+        # self.plot_confusion_matrix(self.y_test, y_pred, uniq, normalize=True,
+        #                            title='Normalized confusion matrix')
+        #
+        # filename = '{}/images/{}/{}/{}_{}_CM_Normalized.png'.format('.', self.datasetName, self.algoname, self.datasetName, self.algoname)
+        # plt.savefig(filename, format='png', dpi=250, bbox_inches='tight')
+        # plt.close()

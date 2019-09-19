@@ -225,9 +225,8 @@ class boostingLearnerTraffic():
         self.X_train = scaler.transform(self.X_train)
         self.X_test = scaler.transform(self.X_test)
 
-        self.baseEstimater = dtr(criterion='entropy', class_weight='balanced', max_depth=10,
-                                 random_state=0, min_samples_split=20)
-        self.classifier = abr(base_estimator=self.baseEstimater, algorithm='SAMME')
+        self.baseEstimater = dtr()
+        self.classifier = abr(base_estimator=self.baseEstimater)
 
         self.cv = 5;
         self.plot_learning_curve(self.classifier, "Learning curve", self.X_train, self.y_train, cv=self.cv)
@@ -240,6 +239,8 @@ class boostingLearnerTraffic():
                                    [1, 2, 5, 10, 20, 30, 45, 60, 80, 90, 100], cv=self.cv)
         self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "learning_rate",
                                    [(2 ** x) / 100 for x in range(7)] + [1], cv=self.cv)
+        self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "loss",
+                                   ['linear', 'square', 'exponential'], cv=self.cv)
 
         # params={n_neighbors=9, metric='manhattan', weights='uniform'}
         # self.generateFinalModel()

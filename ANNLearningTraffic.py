@@ -16,10 +16,43 @@ class annLearnerTraffic():
         self.dataFilePath = pathToData
         self.algoname = 'ANN'
         self.datasetName = 'Traffic'
+        self.classifier = mlpc(early_stopping=True, validation_fraction=0.5)
+        self.cv = 5;
 
     def loadData(self):
         self.df = pd.read_csv(self.dataFilePath, header=1, index_col=0)
         self.df = self.df.drop('date_time', axis=1)
+        self.labels = self.df.traffic_volume
+        self.df = self.df.drop('traffic_volume', axis=1)
+        onehot = preprocessing.OneHotEncoder(dtype=np.int, sparse=True)
+        encoded = pd.DataFrame(
+            onehot.fit_transform(self.df[['holiday', 'weather_main', 'weather_description']]).toarray(),
+            columns=np.concatenate(
+                (np.unique(self.df.holiday), np.unique(self.df.weather_main), np.unique(self.df.weather_description)),
+                axis=None))
+        self.df = self.df.drop('holiday', axis=1)
+        self.df = self.df.drop('weather_main', axis=1)
+        self.df = self.df.drop('weather_description', axis=1)
+        self.df = pd.concat([self.df, encoded], axis=1)
+        self.df = pd.concat([self.df, self.labels], axis=1)
+
+        self.features = np.array(self.df.iloc[:, 0:-1])
+        self.labels = np.array(self.df.iloc[:, -1])
+
+        # Split the data into a training set and a test set
+        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.features, self.labels,
+                                                                                test_size=0.1, random_state=0,
+                                                                                shuffle=True)
+        # sss = StratifiedShuffleSplit(n_splits=1,test_size=0.1, random_state=0)
+        # sss.get_n_splits(self.features, self.labels)
+        # for train_index, test_index in sss.split(self.features, self.labels):
+        #     self.X_train, self.X_test = self.features[train_index], self.features[test_index]
+        #     self.y_train, self.y_test = self.labels[train_index], self.labels[test_index]
+        scaler = preprocessing.StandardScaler().fit(self.X_train)
+        self.X_train = scaler.transform(self.X_train)
+        self.X_test = scaler.transform(self.X_test)
+        dimension = self.features.shape[1]
+        self.classifier.set_params(hidden_layer_sizes=(dimension, dimension))
 
     # Code utilized from Scikit learn.
     def plot_confusion_matrix(self, y_true, y_pred, classes,
@@ -194,40 +227,6 @@ class annLearnerTraffic():
         plt.close()
 
     def learn(self):
-        self.labels = self.df.traffic_volume
-        self.df = self.df.drop('traffic_volume', axis=1)
-        onehot = preprocessing.OneHotEncoder(dtype=np.int, sparse=True)
-        encoded = pd.DataFrame(
-            onehot.fit_transform(self.df[['holiday', 'weather_main', 'weather_description']]).toarray(),
-            columns=np.concatenate(
-                (np.unique(self.df.holiday), np.unique(self.df.weather_main), np.unique(self.df.weather_description)),
-                axis=None))
-        self.df = self.df.drop('holiday', axis=1)
-        self.df = self.df.drop('weather_main', axis=1)
-        self.df = self.df.drop('weather_description', axis=1)
-        self.df = pd.concat([self.df, encoded], axis=1)
-        self.df = pd.concat([self.df, self.labels], axis=1)
-
-        self.features = np.array(self.df.iloc[:, 0:-1])
-        self.labels = np.array(self.df.iloc[:, -1])
-
-        # Split the data into a training set and a test set
-        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.features, self.labels,
-                                                                                test_size=0.1, random_state=0,
-                                                                                shuffle=True)
-        # sss = StratifiedShuffleSplit(n_splits=1,test_size=0.1, random_state=0)
-        # sss.get_n_splits(self.features, self.labels)
-        # for train_index, test_index in sss.split(self.features, self.labels):
-        #     self.X_train, self.X_test = self.features[train_index], self.features[test_index]
-        #     self.y_train, self.y_test = self.labels[train_index], self.labels[test_index]
-        scaler = preprocessing.StandardScaler().fit(self.X_train)
-        self.X_train = scaler.transform(self.X_train)
-        self.X_test = scaler.transform(self.X_test)
-
-        dimension = self.features.shape[1]
-        self.classifier = mlpc(early_stopping=True, validation_fraction=0.5, hidden_layer_sizes=(dimension, dimension))
-
-        self.cv = 5;
         self.plot_learning_curve(self.classifier, "Learning curve", self.X_train, self.y_train, cv=self.cv)
         filename = '{}/images/{}/{}/{}_{}_LC.png'.format('.', self.datasetName, self.algoname, self.datasetName,
                                                          self.algoname)
@@ -244,10 +243,8 @@ class annLearnerTraffic():
                                    [2 ** x for x in range(12)] + [2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900,
                                                                   3000], cv=self.cv)
 
-        # params={min_samples_split=9, max_depth=4, class_weight='balanced'}
-        # self.generateFinalModel()
-
-    def generateFinalModel(self, params):
+    def generateFinalModel(self):
+        params={'class_weight':'balanced'}
         self.classifier.set_params(params)
         self.plot_learning_curve(self.classifier, "Learning curve-with optimised hyperparameter", self.X_train,
                                  self.y_train,
@@ -257,25 +254,25 @@ class annLearnerTraffic():
         plt.savefig(filename, format='png', dpi=150)
         plt.close()
 
-        self.classifier.fit(self.X_train, self.y_train)
-        y_pred = self.classifier.predict(self.X_test)
-        np.set_printoptions(precision=2)
-
-        uniq = np.unique(self.labels)
-
-        # Plot non-normalized confusion matrix
-        self.plot_confusion_matrix(self.y_test, y_pred, uniq,
-                                   title='Confusion matrix, without normalization')
-
-        filename = '{}/images/{}/{}/{}_{}_CM.png'.format('.', self.datasetName, self.algoname, self.datasetName,
-                                                         self.algoname)
-        plt.savefig(filename, format='png', dpi=150, bbox_inches='tight')
-
-        # Plot normalized confusion matrix
-        self.plot_confusion_matrix(self.y_test, y_pred, uniq, normalize=True,
-                                   title='Normalized confusion matrix')
-
-        filename = '{}/images/{}/{}/{}_{}_CM_Normalized.png'.format('.', self.datasetName, self.algoname,
-                                                                    self.datasetName, self.algoname)
-        plt.savefig(filename, format='png', dpi=250, bbox_inches='tight')
-        plt.close()
+        # self.classifier.fit(self.X_train, self.y_train)
+        # y_pred = self.classifier.predict(self.X_test)
+        # np.set_printoptions(precision=2)
+        #
+        # uniq = np.unique(self.labels)
+        #
+        # # Plot non-normalized confusion matrix
+        # self.plot_confusion_matrix(self.y_test, y_pred, uniq,
+        #                            title='Confusion matrix, without normalization')
+        #
+        # filename = '{}/images/{}/{}/{}_{}_CM.png'.format('.', self.datasetName, self.algoname, self.datasetName,
+        #                                                  self.algoname)
+        # plt.savefig(filename, format='png', dpi=150, bbox_inches='tight')
+        #
+        # # Plot normalized confusion matrix
+        # self.plot_confusion_matrix(self.y_test, y_pred, uniq, normalize=True,
+        #                            title='Normalized confusion matrix')
+        #
+        # filename = '{}/images/{}/{}/{}_{}_CM_Normalized.png'.format('.', self.datasetName, self.algoname,
+        #                                                             self.datasetName, self.algoname)
+        # plt.savefig(filename, format='png', dpi=250, bbox_inches='tight')
+        # plt.close()

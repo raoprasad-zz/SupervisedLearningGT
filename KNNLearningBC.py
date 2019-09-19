@@ -16,9 +16,29 @@ class knnLearnerBC():
         self.dataFilePath = pathToData
         self.algoname = 'KNN'
         self.datasetName = 'BC'
+        self.classifier = knn(weights='uniform', algorithm='ball_tree')
+        self.cv = 5;
 
     def loadData(self):
         self.df = pd.read_csv(self.dataFilePath, header=1, index_col=0)
+        label_encoder = preprocessing.LabelEncoder()
+        encode = self.df[['Class']].copy()
+        encode = encode.apply(label_encoder.fit_transform)
+        self.df = self.df.drop(columns='Class')
+        self.df = pd.concat([self.df, encode], axis=1)
+        self.df = self.df[(self.df[['Clump Thickness', 'Uniformity of Cell Size', 'Uniformity of Cell Shape',
+                                    'Marginal Adhesion', 'Single Epithelial Cell Size', 'Bare Nuclei',
+                                    'Bland Chromatin', 'Normal Nucleoli', 'Mitoses', 'Class']] != '?').all(axis=1)]
+        self.features = np.array(self.df.iloc[:, 0:-1])
+        self.labels = np.array(self.df.iloc[:, -1])
+
+        # Split the data into a training set and a test set
+        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.features, self.labels,
+                                                                                test_size=0.1, random_state=0,
+                                                                                shuffle=True, stratify=self.labels)
+        scaler = preprocessing.StandardScaler().fit(self.X_train)
+        self.X_train = scaler.transform(self.X_train)
+        self.X_test = scaler.transform(self.X_test)
 
     # Code utilized from Scikit learn.
     def plot_confusion_matrix(self,y_true, y_pred, classes,
@@ -193,28 +213,6 @@ class knnLearnerBC():
         plt.close()
 
     def learn(self):
-        label_encoder = preprocessing.LabelEncoder()
-        encode = self.df[['Class']].copy()
-        encode = encode.apply(label_encoder.fit_transform)
-        self.df = self.df.drop(columns='Class')
-        self.df = pd.concat([self.df, encode], axis=1)
-        self.df = self.df[(self.df[['Clump Thickness', 'Uniformity of Cell Size', 'Uniformity of Cell Shape',
-                                    'Marginal Adhesion', 'Single Epithelial Cell Size', 'Bare Nuclei',
-                                    'Bland Chromatin', 'Normal Nucleoli', 'Mitoses', 'Class']] != '?').all(axis=1)]
-        self.features = np.array(self.df.iloc[:, 0:-1])
-        self.labels = np.array(self.df.iloc[:, -1])
-
-        # Split the data into a training set and a test set
-        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.features, self.labels,
-                                                                                test_size=0.1, random_state=0,
-                                                                                shuffle=True, stratify=self.labels)
-        scaler = preprocessing.StandardScaler().fit(self.X_train)
-        self.X_train = scaler.transform(self.X_train)
-        self.X_test = scaler.transform(self.X_test)
-
-        self.classifier = knn(weights='uniform', algorithm='ball_tree')
-
-        self.cv = 5;
         self.plot_learning_curve(self.classifier, "Learning curve", self.X_train, self.y_train, cv=self.cv)
         filename = '{}/images/{}/{}/{}_{}_LC.png'.format('.', self.datasetName, self.algoname, self.datasetName,
                                                          self.algoname)
@@ -232,10 +230,8 @@ class knnLearnerBC():
         self.plot_validation_curve(self.classifier,self.X_train,self.y_train,
                                    "metric", ['manhattan', 'chebyshev', 'euclidean'], cv=self.cv)
 
-        # params={n_neighbors=9, metric='manhattan', weights='uniform'}
-        # self.generateFinalModel()
-
     def generateFinalModel(self, params):
+        params = {'n_neighbors':9, 'metric':'manhattan', 'weights':'uniform'}
         self.classifier.set_params(params)
         self.plot_learning_curve(self.classifier, "Learning curve-with optimised hyperparameter", self.X_train,
                                  self.y_train,

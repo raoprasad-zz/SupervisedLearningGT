@@ -16,9 +16,29 @@ class annLearnerLetter():
         self.dataFilePath = pathToData
         self.algoname = 'ANN'
         self.datasetName = 'Letter'
+        self.classifier = mlpc(early_stopping=True, validation_fraction=0.5)
+        self.cv = 5;
 
     def loadData(self):
         self.df = pd.read_csv(self.dataFilePath, header=1, index_col=0)
+        label_encoder = preprocessing.LabelEncoder()
+        encode = self.df[['letter']].copy()
+        encode = encode.apply(label_encoder.fit_transform)
+        self.df = self.df.drop(columns='letter')
+        self.df = pd.concat([self.df, encode], axis=1)
+
+        self.features = np.array(self.df.iloc[:, 0:-1])
+        self.labels = np.array(self.df.iloc[:, -1])
+
+        # Split the data into a training set and a test set
+        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.features, self.labels,
+                                                                                test_size=0.1, random_state=0,
+                                                                                shuffle=True, stratify=self.labels)
+        scaler = preprocessing.StandardScaler().fit(self.X_train)
+        self.X_train = scaler.transform(self.X_train)
+        self.X_test = scaler.transform(self.X_test)
+        dimension = self.features.shape[1]
+        self.classifier.set_params(hidden_layer_sizes=(dimension, dimension))
 
     # Code utilized from Scikit learn.
     def plot_confusion_matrix(self, y_true, y_pred, classes,
@@ -193,27 +213,6 @@ class annLearnerLetter():
         plt.close()
 
     def learn(self):
-        label_encoder = preprocessing.LabelEncoder()
-        encode = self.df[['letter']].copy()
-        encode = encode.apply(label_encoder.fit_transform)
-        self.df = self.df.drop(columns='letter')
-        self.df = pd.concat([self.df, encode], axis=1)
-
-        self.features = np.array(self.df.iloc[:, 0:-1])
-        self.labels = np.array(self.df.iloc[:, -1])
-
-        # Split the data into a training set and a test set
-        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.features, self.labels,
-                                                                                test_size=0.1, random_state=0,
-                                                                                shuffle=True, stratify=self.labels)
-        scaler = preprocessing.StandardScaler().fit(self.X_train)
-        self.X_train = scaler.transform(self.X_train)
-        self.X_test = scaler.transform(self.X_test)
-
-        dimension = self.features.shape[1]
-        self.classifier = mlpc(early_stopping=True, validation_fraction=0.5, hidden_layer_sizes=(dimension, dimension))
-
-        self.cv = 5;
         self.plot_learning_curve(self.classifier, "Learning curve", self.X_train, self.y_train, cv=self.cv)
         filename = '{}/images/{}/{}/{}_{}_LC.png'.format('.', self.datasetName, self.algoname, self.datasetName,
                                                          self.algoname)
@@ -230,10 +229,8 @@ class annLearnerLetter():
                                    [2 ** x for x in range(12)] + [2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900,
                                                                   3000], cv=self.cv)
 
-        # params={min_samples_split=9, max_depth=4, class_weight='balanced'}
-        # self.generateFinalModel()
-
-    def generateFinalModel(self, params):
+    def generateFinalModel(self):
+        params = {'activation':9}
         self.classifier.set_params(params)
         self.plot_learning_curve(self.classifier, "Learning curve-with optimised hyperparameter", self.X_train,
                                  self.y_train,

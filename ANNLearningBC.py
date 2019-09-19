@@ -17,9 +17,31 @@ class annLearnerBC():
         self.dataFilePath = pathToData
         self.algoname = 'ANN'
         self.datasetName = 'BC'
+        self.classifier = mlpc(early_stopping=True)
+        self.cv = 5;
 
     def loadData(self):
         self.df = pd.read_csv(self.dataFilePath, header=1, index_col=0)
+        label_encoder = preprocessing.LabelEncoder()
+        encode = self.df[['Class']].copy()
+        encode = encode.apply(label_encoder.fit_transform)
+        self.df = self.df.drop(columns='Class')
+        self.df = pd.concat([self.df, encode], axis=1)
+        self.df = self.df[(self.df[['Clump Thickness', 'Uniformity of Cell Size', 'Uniformity of Cell Shape',
+                                    'Marginal Adhesion', 'Single Epithelial Cell Size', 'Bare Nuclei',
+                                    'Bland Chromatin', 'Normal Nucleoli', 'Mitoses', 'Class']] != '?').all(axis=1)]
+        self.features = np.array(self.df.iloc[:, 0:-1])
+        self.labels = np.array(self.df.iloc[:, -1])
+
+        # Split the data into a training set and a test set
+        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.features, self.labels,
+                                                                                test_size=0.1, random_state=0,
+                                                                                shuffle=True, stratify=self.labels)
+        scaler = preprocessing.StandardScaler().fit(self.X_train)
+        self.X_train = scaler.transform(self.X_train)
+        self.X_test = scaler.transform(self.X_test)
+        dimension = self.features.shape[1]
+        self.classifier.set_params(hidden_layer_sizes=(dimension, dimension))
 
     # Code utilized from Scikit learn.
     def plot_confusion_matrix(self, y_true, y_pred, classes,
@@ -194,42 +216,12 @@ class annLearnerBC():
         plt.close()
 
     def learn(self):
-        label_encoder = preprocessing.LabelEncoder()
-        encode = self.df[['Class']].copy()
-        encode = encode.apply(label_encoder.fit_transform)
-        self.df = self.df.drop(columns='Class')
-        self.df = pd.concat([self.df, encode], axis=1)
-        self.df = self.df[(self.df[['Clump Thickness', 'Uniformity of Cell Size', 'Uniformity of Cell Shape',
-                                    'Marginal Adhesion', 'Single Epithelial Cell Size', 'Bare Nuclei',
-                                    'Bland Chromatin', 'Normal Nucleoli', 'Mitoses', 'Class']] != '?').all(axis=1)]
-        self.features = np.array(self.df.iloc[:, 0:-1])
-        self.labels = np.array(self.df.iloc[:, -1])
-
-        # Split the data into a training set and a test set
-        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.features, self.labels,
-                                                                                test_size=0.1, random_state=0,
-                                                                                shuffle=True, stratify=self.labels)
-        scaler = preprocessing.StandardScaler().fit(self.X_train)
-        self.X_train = scaler.transform(self.X_train)
-        self.X_test = scaler.transform(self.X_test)
-
-        dimension = self.features.shape[1]
-        self.classifier = mlpc(early_stopping=True, hidden_layer_sizes=(dimension,dimension))
-
-        self.cv = 5;
         self.plot_learning_curve(self.classifier, "Learning curve", self.X_train, self.y_train, cv=self.cv)
         filename = '{}/images/{}/{}/{}_{}_LC.png'.format('.', self.datasetName, self.algoname, self.datasetName,
                                                          self.algoname)
         plt.savefig(filename, format='png', dpi=150)
         plt.close()
 
-
-        # self.plot_validation_curve(self.classifier,self.X_train,self.y_train,"hidden_layer_sizes",
-        #                            [x for x in itertools.product((dimension, dimension // 2, dimension * 2), repeat=1)],
-        #                            cv=self.cv)
-        # self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "hidden_layer_sizes",
-        #                            [x for x in itertools.product((dimension, dimension // 2, dimension * 2), repeat=2)],
-        #                            cv=self.cv)
         self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "activation",
                                    ['identity', 'logistic', 'tanh', 'relu'], cv=self.cv)
         #np.logspace(-5, 3, 20)
@@ -240,10 +232,8 @@ class annLearnerBC():
                                    [2 ** x for x in range(12)] + [2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900,
                                                                   3000], cv=self.cv)
 
-        # params={min_samples_split=9, max_depth=4, class_weight='balanced'}
-        # self.generateFinalModel()
-
-    def generateFinalModel(self, params):
+    def generateFinalModel(self):
+        params = {'activation':9}
         self.classifier.set_params(params)
         self.plot_learning_curve(self.classifier, "Learning curve-with optimised hyperparameter", self.X_train,
                                  self.y_train,
