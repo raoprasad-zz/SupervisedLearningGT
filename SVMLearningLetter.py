@@ -187,7 +187,7 @@ class SVMLearnerLetter():
         test_scores_mean = np.mean(test_scores, axis=1)
         test_scores_std = np.std(test_scores, axis=1)
         ax = plt.figure().gca()
-        plt.title("Validation Curve")
+        plt.title("Validation Curve - " + self.datasetName + '-' + self.algoname)
         plt.xlabel(param_name)
         plt.ylabel("Score")
         plt.ylim(0.0, 1.1)
@@ -210,7 +210,7 @@ class SVMLearnerLetter():
         plt.close()
 
     def learn(self):
-        self.plot_learning_curve(self.classifier, "Learning curve", self.X_train, self.y_train, cv=self.cv)
+        self.plot_learning_curve(self.classifier, "Learning curve - " + self.datasetName + '-' + self.algoname, self.X_train, self.y_train, cv=self.cv)
         filename = '{}/images/{}/{}/{}_{}_LC.png'.format('.', self.datasetName, self.algoname, self.datasetName, self.algoname)
         plt.savefig(filename, format='png', dpi=150)
         plt.close()
@@ -227,7 +227,7 @@ class SVMLearnerLetter():
     def generateFinalModel(self):
         params = {'max_depth':23, 'class_weight':'balanced'}
         self.classifier.set_params(**params)
-        self.plot_learning_curve(self.classifier, "Learning curve-with optimised hyperparameter", self.X_train,
+        self.plot_learning_curve(self.classifier, "Optimised Learning curve - " + self.datasetName + '-' + self.algoname, self.X_train,
                                  self.y_train,
                                  cv=self.cv)
         filename = '{}/images/{}/{}/{}_{}_LC(optimized).png'.format('.', self.datasetName, self.algoname, self.datasetName, self.algoname)
