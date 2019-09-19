@@ -213,7 +213,8 @@ class annLearnerAbalone():
         self.X_train = scaler.transform(self.X_train)
         self.X_test = scaler.transform(self.X_test)
 
-        self.classifier = mlpc(early_stopping=True, validation_fraction=0.5)
+        dimension = self.features.shape[1]
+        self.classifier = mlpc(early_stopping=True, validation_fraction=0.5, hidden_layer_sizes=(dimension, dimension))
 
         self.cv = 5;
         self.plot_learning_curve(self.classifier, "Learning curve", self.X_train, self.y_train, cv=self.cv)
@@ -222,8 +223,6 @@ class annLearnerAbalone():
         plt.savefig(filename, format='png', dpi=150)
         plt.close()
 
-        self.plot_validation_curve(self.classifier,self.X_train,self.y_train,"hidden_layer_sizes",
-                                   [(10,), (20,), (30,), (40,), (50,), (100,), (200,)], cv=self.cv)
         self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "activation",
                                    ['identity', 'logistic', 'tanh', 'relu'], cv=self.cv)
         #np.logspace(-5, 3, 20)
