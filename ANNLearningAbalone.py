@@ -1,15 +1,15 @@
-import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
-from sklearn import preprocessing
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import confusion_matrix
-from sklearn.utils.multiclass import unique_labels
-from sklearn.model_selection import learning_curve
+import numpy as np
+import pandas as pd
 from matplotlib.ticker import MaxNLocator
+from sklearn import preprocessing
+from sklearn.metrics import confusion_matrix
+from sklearn.model_selection import cross_val_predict
+from sklearn.model_selection import learning_curve
+from sklearn.model_selection import train_test_split
 from sklearn.model_selection import validation_curve
-from sklearn.model_selection import GridSearchCV
 from sklearn.neural_network import MLPRegressor as mlpc
+from sklearn.utils.multiclass import unique_labels
 
 
 class annLearnerAbalone():
@@ -17,7 +17,7 @@ class annLearnerAbalone():
         self.dataFilePath = pathToData
         self.algoname = 'ANN'
         self.datasetName = 'Abalone'
-        self.classifier = mlpc(early_stopping=True, validation_fraction=0.5, hidden_layer_sizes=(dimension, dimension))
+        self.classifier = mlpc()
         self.cv = 5;
 
     def loadData(self):
@@ -184,7 +184,8 @@ class annLearnerAbalone():
         return plt
 
     # Code utilized from Scikit learn.
-    def plot_validation_curve(self, classifier, X, y, param_name, param_range=np.logspace(-6, -1, 5), cv=None):
+    def plot_validation_curve(self, classifier, X, y, param_name, param_range=np.logspace(-6, -1, 5),
+                              cv=None, x_scale='linear'):
         train_scores, test_scores = validation_curve(
             classifier, X, y, param_name=param_name, param_range=param_range,
             cv=cv, scoring="r2", n_jobs=1)
@@ -224,18 +225,21 @@ class annLearnerAbalone():
         plt.close()
 
         self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "activation",
-                                   ['identity', 'logistic', 'tanh', 'relu'], cv=self.cv)
+                                   ['logistic', 'tanh', 'relu'], cv=self.cv)
         #np.logspace(-5, 3, 20)
         self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "alpha",
-                                   [10 ** -x for x in np.arange(-2, 7.01, 0.5)], cv=self.cv)
+                                   np.logspace(-5, 3, 20), cv=self.cv)
 
         self.plot_validation_curve(self.classifier,self.X_train,self.y_train,"max_iter",
                                    [2 ** x for x in range(12)] + [2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900,
                                                                   3000], cv=self.cv)
 
     def generateFinalModel(self):
-        params = {'activation':9}
-        self.classifier.set_params(params)
+        dimension = self.features.shape[1]
+        self.classifier.set_params(hidden_layer_sizes=(dimension, dimension*2))
+        self.classifier.set_params(solver='lbfgs')
+        params = {'activation':'relu', 'max_iter':3000, 'alpha':4.28133240e-01}
+        self.classifier.set_params(**params)
         self.plot_learning_curve(self.classifier, "Learning curve-with optimised hyperparameter", self.X_train,
                                  self.y_train,
                                  cv=self.cv)
@@ -266,3 +270,15 @@ class annLearnerAbalone():
         #                                                             self.datasetName, self.algoname)
         # plt.savefig(filename, format='png', dpi=250, bbox_inches='tight')
         # plt.close()
+
+        predicted = cross_val_predict(self.classifier, self.X_test, self.y_test, cv=self.cv)
+
+        fig, ax = plt.subplots()
+        ax.scatter(self.y_test, predicted, edgecolors=(0, 0, 0))
+        ax.plot([self.y_test.min(), self.y_test.max()], [self.y_test.min(), self.y_test.max()], 'k--', lw=4)
+        ax.set_xlabel('Measured')
+        ax.set_ylabel('Predicted')
+        filename = '{}/images/{}/{}/{}_{}_Regression_Prediction.png'.format('.', self.datasetName, self.algoname,
+                                                                    self.datasetName, self.algoname)
+        plt.savefig(filename, format='png', dpi=150)
+        plt.close()

@@ -1,16 +1,17 @@
-import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
-from sklearn import preprocessing
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import confusion_matrix
-from sklearn.utils.multiclass import unique_labels
-from sklearn.model_selection import learning_curve
+import numpy as np
+import pandas as pd
 from matplotlib.ticker import MaxNLocator
-from sklearn.model_selection import validation_curve
+from sklearn import preprocessing
 from sklearn.ensemble import AdaBoostRegressor as abr
+from sklearn.metrics import confusion_matrix
+from sklearn.model_selection import cross_val_predict
+from sklearn.model_selection import learning_curve
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import validation_curve
 from sklearn.tree import DecisionTreeRegressor as dtr
-from sklearn.model_selection import GridSearchCV
+from sklearn.utils.multiclass import unique_labels
+
 
 class boostingLearnerAbalone():
     def __init__(self, pathToData):
@@ -18,10 +19,10 @@ class boostingLearnerAbalone():
         self.algoname = 'Boosting'
         self.datasetName = 'Abalone'
         self.baseEstimater = dtr()
-        x = {'base_estimator': self.baseEstimater,
-             'base_estimator__max_depth': 5}
+        # x = {'base_estimator': self.baseEstimater,
+        #      'base_estimator__max_depth': 5}
         self.classifier = abr(base_estimator=self.baseEstimater)
-        self.classifier.set_params(**x)
+        # self.classifier.set_params(**x)
         self.cv = 5;
 
     def loadData(self):
@@ -231,19 +232,17 @@ class boostingLearnerAbalone():
         plt.savefig(filename, format='png', dpi=150)
         plt.close()
 
-        self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "base_estimator__max_depth",
-                                   np.arange(4,10,1), cv=self.cv)
         self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "n_estimators",
                                    [1, 2, 5, 10, 20, 30, 45, 60, 80, 90, 100], cv=self.cv)
         self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "learning_rate",
                                    [(2 ** x) / 100 for x in range(7)] + [1], cv=self.cv)
-        self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "loss",
-                                   ['linear', 'square', 'exponential'], cv=self.cv)
+        self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "base_estimator__max_depth",
+                                   np.arange(1, 30, 1), cv=self.cv)
 
 
-    def generateFinalModel(self, params):
-        # params={n_neighbors=9, metric='manhattan', weights='uniform'}
-        self.classifier.set_params(params)
+    def generateFinalModel(self):
+        params={'learning_rate':0.04, 'n_estimators':5}
+        self.classifier.set_params(**params)
         self.plot_learning_curve(self.classifier, "Learning curve-with optimised hyperparameter", self.X_train,
                                  self.y_train,
                                  cv=self.cv)
@@ -274,3 +273,14 @@ class boostingLearnerAbalone():
         #                                                             self.datasetName, self.algoname)
         # plt.savefig(filename, format='png', dpi=250, bbox_inches='tight')
         # plt.close()
+        predicted = cross_val_predict(self.classifier, self.X_test, self.y_test, cv=self.cv)
+
+        fig, ax = plt.subplots()
+        ax.scatter(self.y_test, predicted, edgecolors=(0, 0, 0))
+        ax.plot([self.y_test.min(), self.y_test.max()], [self.y_test.min(), self.y_test.max()], 'k--', lw=4)
+        ax.set_xlabel('Measured')
+        ax.set_ylabel('Predicted')
+        filename = '{}/images/{}/{}/{}_{}_Regression_Prediction.png'.format('.', self.datasetName, self.algoname,
+                                                                            self.datasetName, self.algoname)
+        plt.savefig(filename, format='png', dpi=150)
+        plt.close()

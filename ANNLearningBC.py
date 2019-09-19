@@ -17,7 +17,7 @@ class annLearnerBC():
         self.dataFilePath = pathToData
         self.algoname = 'ANN'
         self.datasetName = 'BC'
-        self.classifier = mlpc(early_stopping=True)
+        self.classifier = mlpc()
         self.cv = 5;
 
     def loadData(self):
@@ -183,7 +183,8 @@ class annLearnerBC():
         return plt
 
     # Code utilized from Scikit learn.
-    def plot_validation_curve(self, classifier, X, y, param_name, param_range=np.logspace(-6, -1, 5), cv=None):
+    def plot_validation_curve(self, classifier, X, y, param_name, param_range=np.logspace(-6, -1, 5),
+                              cv=None,x_scale='linear'):
         train_scores, test_scores = validation_curve(
             classifier, X, y, param_name=param_name, param_range=param_range,
             cv=cv, scoring="accuracy", n_jobs=1)
@@ -192,6 +193,8 @@ class annLearnerBC():
         test_scores_mean = np.mean(test_scores, axis=1)
         test_scores_std = np.std(test_scores, axis=1)
         ax = plt.figure().gca()
+        if x_scale is not None:
+            ax.set_xscale(x_scale)
         plt.title("Validation Curve")
         plt.xlabel(param_name)
         plt.ylabel("Score")
@@ -223,17 +226,18 @@ class annLearnerBC():
         plt.close()
 
         self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "activation",
-                                   ['identity', 'logistic', 'tanh', 'relu'], cv=self.cv)
+                                   ['logistic', 'tanh', 'relu'], cv=self.cv)
         #np.logspace(-5, 3, 20)
+        # [10 ** -x for x in np.arange(-2, 7.01, 0.5)]
         self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "alpha",
-                                   [10 ** -x for x in np.arange(-2, 7.01, 0.5)], cv=self.cv)
+                                   np.logspace(-5, 3, 20), cv=self.cv)
 
         self.plot_validation_curve(self.classifier,self.X_train,self.y_train,"max_iter",
                                    [2 ** x for x in range(12)] + [2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900,
-                                                                  3000], cv=self.cv)
+                                                                  3000], cv=self.cv, x_scale='linear')
 
     def generateFinalModel(self):
-        params = {'activation':9}
+        params = {'activation':6.95192796e-05}
         self.classifier.set_params(params)
         self.plot_learning_curve(self.classifier, "Learning curve-with optimised hyperparameter", self.X_train,
                                  self.y_train,

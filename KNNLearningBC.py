@@ -221,10 +221,6 @@ class knnLearnerBC():
 
         self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "weights", ['uniform', 'distance'],
                                    cv=self.cv)
-        self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "leaf_size", np.arange(10,201,10),
-                                   cv=self.cv)
-        self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "p", np.arange(1,5,1),
-                                   cv=self.cv)
         self.plot_validation_curve(self.classifier,self.X_train,self.y_train,"n_neighbors", np.arange(1,50,1),
                                    cv=self.cv)
         self.plot_validation_curve(self.classifier,self.X_train,self.y_train,

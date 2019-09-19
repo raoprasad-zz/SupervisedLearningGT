@@ -1,15 +1,16 @@
-import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
-from sklearn import preprocessing
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import confusion_matrix
-from sklearn.utils.multiclass import unique_labels
-from sklearn.model_selection import learning_curve
+import numpy as np
+import pandas as pd
 from matplotlib.ticker import MaxNLocator
+from sklearn import preprocessing
+from sklearn.metrics import confusion_matrix
+from sklearn.model_selection import cross_val_predict
+from sklearn.model_selection import learning_curve
+from sklearn.model_selection import train_test_split
 from sklearn.model_selection import validation_curve
 from sklearn.neighbors import KNeighborsRegressor as knn
-from sklearn.model_selection import GridSearchCV
+from sklearn.utils.multiclass import unique_labels
+
 
 class knnLearnerAbalone():
     def __init__(self, pathToData):
@@ -222,18 +223,14 @@ class knnLearnerAbalone():
 
         self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "weights", ['uniform', 'distance'],
                                    cv=self.cv)
-        self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "leaf_size", np.arange(10,201,10),
-                                   cv=self.cv)
-        self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "p", np.arange(1,5,1),
-                                   cv=self.cv)
         self.plot_validation_curve(self.classifier,self.X_train,self.y_train,"n_neighbors", np.arange(1,50,1),
                                    cv=self.cv)
         self.plot_validation_curve(self.classifier,self.X_train,self.y_train,
                                    "metric", ['manhattan', 'chebyshev', 'euclidean'], cv=self.cv)
 
     def generateFinalModel(self):
-        params = {'n_neighbors':9, 'metric':'manhattan', 'weights':'uniform'}
-        self.classifier.set_params(params)
+        params = {'n_neighbors':18, 'weights':'uniform'}
+        self.classifier.set_params(**params)
         self.plot_learning_curve(self.classifier, "Learning curve-with optimised hyperparameter", self.X_train,
                                  self.y_train,
                                  cv=self.cv)
@@ -264,3 +261,14 @@ class knnLearnerAbalone():
         #                                                             self.datasetName, self.algoname)
         # plt.savefig(filename, format='png', dpi=250, bbox_inches='tight')
         # plt.close()
+        predicted = cross_val_predict(self.classifier, self.X_test, self.y_test, cv=self.cv)
+
+        fig, ax = plt.subplots()
+        ax.scatter(self.y_test, predicted, edgecolors=(0, 0, 0))
+        ax.plot([self.y_test.min(), self.y_test.max()], [self.y_test.min(), self.y_test.max()], 'k--', lw=4)
+        ax.set_xlabel('Measured')
+        ax.set_ylabel('Predicted')
+        filename = '{}/images/{}/{}/{}_{}_Regression_Prediction.png'.format('.', self.datasetName, self.algoname,
+                                                                            self.datasetName, self.algoname)
+        plt.savefig(filename, format='png', dpi=150)
+        plt.close()

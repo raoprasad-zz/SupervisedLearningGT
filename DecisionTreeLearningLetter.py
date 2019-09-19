@@ -214,13 +214,13 @@ class decisionTreeLearnerLetter():
         plt.savefig(filename, format='png', dpi=150)
         plt.close()
 
-        self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "max_depth", np.arange(1, 100, 1),
+        self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "max_depth", np.arange(1, 50, 1),
                                    cv=self.cv)
         self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "min_samples_split",
-                                   np.arange(3, 100, 1), cv=self.cv)
+                                   np.arange(2, 100, 1), cv=self.cv)
 
     def generateFinalModel(self):
-        params = {'max_depth':15, 'class_weight':'balanced'}
+        params = {'max_depth':23, 'class_weight':'balanced'}
         self.classifier.set_params(**params)
         self.plot_learning_curve(self.classifier, "Learning curve-with optimised hyperparameter", self.X_train,
                                  self.y_train,

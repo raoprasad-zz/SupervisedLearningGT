@@ -18,10 +18,10 @@ class boostingLearnerLetter():
         self.algoname = 'Boosting'
         self.datasetName = 'Letter'
         self.baseEstimater = dtc(class_weight='balanced')
-        x = {'base_estimator': self.baseEstimater,
-             'base_estimator__max_depth': 15}
+        # x = {'base_estimator': self.baseEstimater,
+        #      'base_estimator__max_depth': 15}
         self.classifier = abc(base_estimator=self.baseEstimater, algorithm='SAMME')
-        self.classifier.set_params(**x)
+        # self.classifier.set_params(**x)
         self.cv = 5;
 
     def loadData(self):
@@ -222,12 +222,12 @@ class boostingLearnerLetter():
         plt.savefig(filename, format='png', dpi=150)
         plt.close()
 
-        self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "base_estimator__max_depth",
-                                   np.arange(10, 20, 1), cv=self.cv)
         self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "n_estimators",
                                    [1, 2, 5, 10, 20, 30, 45, 60, 80, 90, 100], cv=self.cv)
         self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "learning_rate",
                                    [(2 ** x) / 100 for x in range(7)] + [1], cv=self.cv)
+        self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "base_estimator__max_depth",
+                                   np.arange(1, 30, 1), cv=self.cv)
 
     def generateFinalModel(self, params):
         # params={n_neighbors=9, metric='manhattan', weights='uniform'}

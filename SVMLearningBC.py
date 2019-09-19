@@ -1,43 +1,42 @@
-import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
-from matplotlib.ticker import MaxNLocator
+import numpy as np
+import matplotlib.pyplot as plt
 from sklearn import preprocessing
-from sklearn import tree
-from sklearn.metrics import confusion_matrix
-from sklearn.model_selection import cross_val_predict
-from sklearn.model_selection import learning_curve
 from sklearn.model_selection import train_test_split
-from sklearn.model_selection import validation_curve
+from sklearn.metrics import confusion_matrix
 from sklearn.utils.multiclass import unique_labels
+from sklearn import tree
+from sklearn.model_selection import learning_curve
+from matplotlib.ticker import MaxNLocator
+from sklearn.model_selection import validation_curve
+from sklearn.model_selection import GridSearchCV
+from sklearn import svm
 
-
-class decisionTreeLearnerAbalone():
+class SVMLearnerBC():
     def __init__(self, pathToData):
         self.dataFilePath = pathToData
-        self.algoname = 'DT'
-        self.datasetName = 'Abalone'
-        self.classifier = tree.DecisionTreeRegressor()
+        self.algoname = 'SVM'
+        self.datasetName = 'BC'
+        self.classifier = svm.SVC(class_weight='balanced')
         self.cv = 5;
 
     def loadData(self):
         self.df = pd.read_csv(self.dataFilePath, header=1, index_col=0)
-        self.df = self.df.drop('Crings', axis=1)  # Crings added to investigate classification on this dataset
-        self.labels = self.df.Rings
-        self.df = self.df.drop('Rings', axis=1)
-        onehot = preprocessing.OneHotEncoder(dtype=np.int, sparse=True)
-        nominals = pd.DataFrame(onehot.fit_transform(self.df[['Sex']]).toarray(), columns=np.unique(self.df.Sex))
-        self.df = self.df.drop('Sex', axis=1)
-        self.df = pd.concat([self.df, nominals], axis=1)
-        self.df = pd.concat([self.df, self.labels], axis=1)
-
+        label_encoder = preprocessing.LabelEncoder()
+        encode = self.df[['Class']].copy()
+        encode = encode.apply(label_encoder.fit_transform)
+        self.df = self.df.drop(columns='Class')
+        self.df = pd.concat([self.df, encode], axis=1)
+        self.df = self.df[(self.df[['Clump Thickness', 'Uniformity of Cell Size', 'Uniformity of Cell Shape',
+                                    'Marginal Adhesion', 'Single Epithelial Cell Size', 'Bare Nuclei',
+                                    'Bland Chromatin', 'Normal Nucleoli', 'Mitoses', 'Class']] != '?').all(axis=1)]
         self.features = np.array(self.df.iloc[:, 0:-1])
         self.labels = np.array(self.df.iloc[:, -1])
 
         # Split the data into a training set and a test set
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.features, self.labels,
                                                                                 test_size=0.1, random_state=0,
-                                                                                shuffle=True)
+                                                                                shuffle=True, stratify=self.labels)
         scaler = preprocessing.StandardScaler().fit(self.X_train)
         self.X_train = scaler.transform(self.X_train)
         self.X_test = scaler.transform(self.X_test)
@@ -98,7 +97,7 @@ class decisionTreeLearnerAbalone():
     # Code utilized from Scikit learn.
     def plot_learning_curve(self,estimator, title, X, y, ylim=None, cv=None,
                             n_jobs=None, train_sizes=np.append(np.linspace(0.05, 0.1, 10, endpoint=False),
-                                                               np.linspace(0.1, 1, 10, endpoint=True)), shuffle=True):
+                                                               np.linspace(0.1, 1, 10, endpoint=True)),shuffle=True):
         """
         Generate a simple plot of the test and training learning curve.
 
@@ -184,7 +183,7 @@ class decisionTreeLearnerAbalone():
     def plot_validation_curve(self, classifier, X, y, param_name, param_range=np.logspace(-6, -1, 5), cv=None):
         train_scores, test_scores = validation_curve(
             classifier, X, y, param_name=param_name, param_range=param_range,
-            cv=cv, scoring="r2", n_jobs=1)
+            cv=cv, scoring="accuracy", n_jobs=1)
         train_scores_mean = np.mean(train_scores, axis=1)
         train_scores_std = np.std(train_scores, axis=1)
         test_scores_mean = np.mean(test_scores, axis=1)
@@ -207,58 +206,54 @@ class decisionTreeLearnerAbalone():
                          test_scores_mean + test_scores_std, alpha=0.2,
                          color="navy")
         plt.legend(loc="best")
-        filename = '{}/images/{}/{}/{}_{}_{}_MCC.png'.format('.', self.datasetName, self.algoname,self.datasetName, self.algoname, param_name)
+        filename = '{}/images/{}/{}/{}_{}_{}_MCC.png'.format('.', self.datasetName, self.algoname, self.datasetName, self.algoname,param_name)
         plt.savefig(filename, format='png', dpi=150)
 
         plt.close()
 
     def learn(self):
         self.plot_learning_curve(self.classifier, "Learning curve", self.X_train, self.y_train, cv=self.cv)
-        filename = '{}/images/{}/{}/{}_{}_LC.png'.format('.', self.datasetName, self.algoname, self.datasetName, self.algoname)
+        filename = '{}/images/{}/{}/{}_{}_LC.png'.format('.', self.datasetName, self.algoname, self.datasetName,
+                                                         self.algoname)
         plt.savefig(filename, format='png', dpi=150)
         plt.close()
 
-        self.plot_validation_curve(self.classifier,self.X_train,self.y_train,"max_depth", np.arange(1,50,1), cv=self.cv)
-        self.plot_validation_curve(self.classifier,self.X_train,self.y_train,"min_samples_split", np.arange(2,100,1), cv=self.cv)
+        self.plot_validation_curve(self.classifier, self.X_train, self.y_train,
+                                   "gamma", np.arange(1 / self.features.shape[1], 2.1, 0.2), cv=self.cv)
+        self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "C",
+                                   np.arange(0.001, 2.5, 0.25), cv=self.cv)
+        self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "tol",
+                                   np.arange(1e-8, 1e-1, 0.01), cv=self.cv)
+        self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "max_iter",
+                                   [-1, int((1e6 / self.features.shape[0]) / .8) + 1], cv=self.cv)
 
     def generateFinalModel(self):
-        params = {'max_depth':5}
-        self.cv=5
-        self.classifier.set_params(**params)
-        self.plot_learning_curve(self.classifier, "Learning curve-with optimised hyperparameter", self.X_train, self.y_train,
+        params={'max_depth':6, 'class_weight':'balanced'}
+        self.classifier.set_params(params)
+        self.plot_learning_curve(self.classifier, "Learning curve-with optimised hyperparameter", self.X_train,
+                                 self.y_train,
                                  cv=self.cv)
         filename = '{}/images/{}/{}/{}_{}_LC(optimized).png'.format('.', self.datasetName, self.algoname, self.datasetName, self.algoname)
         plt.savefig(filename, format='png', dpi=150)
         plt.close()
 
-        # self.classifier.fit(self.X_train, self.y_train)
-        # y_pred = self.classifier.predict(self.X_test)
-        # np.set_printoptions(precision=2)
-        #
-        # uniq = np.unique(self.labels)
+        self.classifier.fit(self.X_train, self.y_train)
+        y_pred = self.classifier.predict(self.X_test)
+        np.set_printoptions(precision=2)
 
-        # # Plot non-normalized confusion matrix
-        # self.plot_confusion_matrix(self.y_test, y_pred, uniq,
-        #                            title='Confusion matrix, without normalization')
-        #
-        # filename = '{}/images/{}/{}/{}_{}_CM.png'.format('.', self.datasetName, self.algoname, self.datasetName, self.algoname)
-        # plt.savefig(filename, format='png', dpi=150, bbox_inches='tight')
-        #
-        # # Plot normalized confusion matrix
-        # self.plot_confusion_matrix(self.y_test, y_pred, uniq, normalize=True,
-        #                            title='Normalized confusion matrix')
-        #
-        # filename = '{}/images/{}/{}/{}_{}_CM_Normalized.png'.format('.', self.datasetName, self.algoname, self.datasetName, self.algoname)
-        # plt.savefig(filename, format='png', dpi=250, bbox_inches='tight')
-        # plt.close()
-        predicted = cross_val_predict(self.classifier, self.X_test, self.y_test, cv=self.cv)
+        uniq = np.unique(self.labels)
 
-        fig, ax = plt.subplots()
-        ax.scatter(self.y_test, predicted, edgecolors=(0, 0, 0))
-        ax.plot([self.y_test.min(), self.y_test.max()], [self.y_test.min(), self.y_test.max()], 'k--', lw=4)
-        ax.set_xlabel('Measured')
-        ax.set_ylabel('Predicted')
-        filename = '{}/images/{}/{}/{}_{}_Regression_Prediction.png'.format('.', self.datasetName, self.algoname,
-                                                                            self.datasetName, self.algoname)
-        plt.savefig(filename, format='png', dpi=150)
+        # Plot non-normalized confusion matrix
+        self.plot_confusion_matrix(self.y_test, y_pred, uniq,
+                                   title='Confusion matrix, without normalization')
+
+        filename = '{}/images/{}/{}/{}_{}_CM.png'.format('.', self.datasetName, self.algoname,self.datasetName, self.algoname)
+        plt.savefig(filename, format='png', dpi=150, bbox_inches='tight')
+
+        # Plot normalized confusion matrix
+        self.plot_confusion_matrix(self.y_test, y_pred, uniq, normalize=True,
+                                   title='Normalized confusion matrix')
+
+        filename = '{}/images/{}/{}/{}_{}_CM_Normalized.png'.format('.', self.datasetName, self.algoname, self.datasetName, self.algoname)
+        plt.savefig(filename, format='png', dpi=250, bbox_inches='tight')
         plt.close()

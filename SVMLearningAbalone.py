@@ -10,14 +10,15 @@ from sklearn.model_selection import learning_curve
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import validation_curve
 from sklearn.utils.multiclass import unique_labels
+from sklearn import svm
 
 
-class decisionTreeLearnerAbalone():
+class SVMLearnerAbalone():
     def __init__(self, pathToData):
         self.dataFilePath = pathToData
-        self.algoname = 'DT'
+        self.algoname = 'SVM'
         self.datasetName = 'Abalone'
-        self.classifier = tree.DecisionTreeRegressor()
+        self.classifier = svm.SVR()
         self.cv = 5;
 
     def loadData(self):
@@ -214,12 +215,19 @@ class decisionTreeLearnerAbalone():
 
     def learn(self):
         self.plot_learning_curve(self.classifier, "Learning curve", self.X_train, self.y_train, cv=self.cv)
-        filename = '{}/images/{}/{}/{}_{}_LC.png'.format('.', self.datasetName, self.algoname, self.datasetName, self.algoname)
+        filename = '{}/images/{}/{}/{}_{}_LC.png'.format('.', self.datasetName, self.algoname, self.datasetName,
+                                                         self.algoname)
         plt.savefig(filename, format='png', dpi=150)
         plt.close()
 
-        self.plot_validation_curve(self.classifier,self.X_train,self.y_train,"max_depth", np.arange(1,50,1), cv=self.cv)
-        self.plot_validation_curve(self.classifier,self.X_train,self.y_train,"min_samples_split", np.arange(2,100,1), cv=self.cv)
+        self.plot_validation_curve(self.classifier, self.X_train, self.y_train,
+                                   "gamma", np.arange(1 / self.features.shape[1], 2.1, 0.2), cv=self.cv)
+        self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "C",
+                                   np.arange(0.001, 2.5, 0.25), cv=self.cv)
+        self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "tol",
+                                   np.arange(1e-8, 1e-1, 0.01), cv=self.cv)
+        self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "max_iter",
+                                   [-1, int((1e6 / self.features.shape[0]) / .8) + 1], cv=self.cv)
 
     def generateFinalModel(self):
         params = {'max_depth':5}

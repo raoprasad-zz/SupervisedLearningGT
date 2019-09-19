@@ -16,7 +16,7 @@ class annLearnerLetter():
         self.dataFilePath = pathToData
         self.algoname = 'ANN'
         self.datasetName = 'Letter'
-        self.classifier = mlpc(early_stopping=True, validation_fraction=0.5)
+        self.classifier = mlpc()
         self.cv = 5;
 
     def loadData(self):
@@ -180,7 +180,7 @@ class annLearnerLetter():
         return plt
 
     # Code utilized from Scikit learn.
-    def plot_validation_curve(self, classifier, X, y, param_name, param_range=np.logspace(-6, -1, 5), cv=None):
+    def plot_validation_curve(self, classifier, X, y, param_name, param_range=np.logspace(-6, -1, 5), cv=None, x_scale='linear'):
         train_scores, test_scores = validation_curve(
             classifier, X, y, param_name=param_name, param_range=param_range,
             cv=cv, scoring="accuracy", n_jobs=1)
@@ -220,17 +220,17 @@ class annLearnerLetter():
         plt.close()
 
         self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "activation",
-                                   ['identity', 'logistic', 'tanh', 'relu'], cv=self.cv)
+                                   ['logistic', 'tanh', 'relu'], cv=self.cv)
         #np.logspace(-5, 3, 20)
         self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "alpha",
-                                   [10 ** -x for x in np.arange(-2, 7.01, 0.5)], cv=self.cv)
+                                   np.logspace(-5, 3, 20), cv=self.cv)
 
         self.plot_validation_curve(self.classifier,self.X_train,self.y_train,"max_iter",
                                    [2 ** x for x in range(12)] + [2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900,
                                                                   3000], cv=self.cv)
 
     def generateFinalModel(self):
-        params = {'activation':9}
+        params = {'max_iter':128, 'alpha':1.00000000e-05}
         self.classifier.set_params(params)
         self.plot_learning_curve(self.classifier, "Learning curve-with optimised hyperparameter", self.X_train,
                                  self.y_train,
