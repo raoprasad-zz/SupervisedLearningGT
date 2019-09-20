@@ -10,7 +10,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import validation_curve
 from sklearn.neighbors import KNeighborsRegressor as knn
 from sklearn.utils.multiclass import unique_labels
-
+from sklearn.model_selection import GridSearchCV
+import timing
 
 class knnLearnerAbalone():
     def __init__(self, pathToData):
@@ -190,6 +191,7 @@ class knnLearnerAbalone():
         train_scores_std = np.std(train_scores, axis=1)
         test_scores_mean = np.mean(test_scores, axis=1)
         test_scores_std = np.std(test_scores, axis=1)
+        self.dumpValidationData(param_name, param_range, train_scores_mean, test_scores_mean)
         ax = plt.figure().gca()
         plt.title("Validation Curve - " + self.datasetName + '-' + self.algoname)
         plt.xlabel(param_name)
@@ -231,44 +233,56 @@ class knnLearnerAbalone():
     def generateFinalModel(self):
         params = {'n_neighbors':18, 'weights':'uniform'}
         self.classifier.set_params(**params)
-        self.plot_learning_curve(self.classifier, "Optimised Learning curve - " + self.datasetName + '-' + self.algoname, self.X_train,
+        timing.getTimingData(self.X_train, self.y_train,self.classifier,self.algoname, self.datasetName)
+        self.classifier.fit(self.X_train, self.y_train)
+        self.generateFinalAccuracy()
+        self.generateFinalLC()
+
+    def generateFinalLC(self, prefix=''):
+        self.plot_learning_curve(self.classifier,
+                                 prefix + "Optimised Learning curve - " + self.datasetName + '-' + self.algoname, self.X_train,
                                  self.y_train,
                                  cv=self.cv)
-        filename = '{}/images/{}/{}/{}_{}_LC(optimized).png'.format('.', self.datasetName, self.algoname,
-                                                                    self.datasetName, self.algoname)
+        filename = '{}/images/{}/{}/{}_{}_LC({}optimized).png'.format('.', self.datasetName, self.algoname,
+                                                                    self.datasetName, self.algoname, prefix)
         plt.savefig(filename, format='png', dpi=150)
         plt.close()
 
-        # self.classifier.fit(self.X_train, self.y_train)
-        # y_pred = self.classifier.predict(self.X_test)
-        # np.set_printoptions(precision=2)
-        #
-        # uniq = np.unique(self.labels)
-        #
-        # # Plot non-normalized confusion matrix
-        # self.plot_confusion_matrix(self.y_test, y_pred, uniq,
-        #                            title='Confusion matrix, without normalization')
-        #
-        # filename = '{}/images/{}/{}/{}_{}_CM.png'.format('.', self.datasetName, self.algoname, self.datasetName,
-        #                                                  self.algoname)
-        # plt.savefig(filename, format='png', dpi=150, bbox_inches='tight')
-        #
-        # # Plot normalized confusion matrix
-        # self.plot_confusion_matrix(self.y_test, y_pred, uniq, normalize=True,
-        #                            title='Normalized confusion matrix')
-        #
-        # filename = '{}/images/{}/{}/{}_{}_CM_Normalized.png'.format('.', self.datasetName, self.algoname,
-        #                                                             self.datasetName, self.algoname)
-        # plt.savefig(filename, format='png', dpi=250, bbox_inches='tight')
-        # plt.close()
-        predicted = cross_val_predict(self.classifier, self.X_test, self.y_test, cv=self.cv)
+    def generateFinalAccuracy(self, prefix=''):
+        # predicted = cross_val_predict(self.classifier, self.X_test, self.y_test, cv=self.cv)
+        y_pred = self.classifier.predict(self.X_test)
 
         fig, ax = plt.subplots()
-        ax.scatter(self.y_test, predicted, edgecolors=(0, 0, 0))
+        ax.scatter(self.y_test, y_pred, edgecolors=(0, 0, 0))
         ax.plot([self.y_test.min(), self.y_test.max()], [self.y_test.min(), self.y_test.max()], 'k--', lw=4)
         ax.set_xlabel('Measured')
         ax.set_ylabel('Predicted')
-        filename = '{}/images/{}/{}/{}_{}_Regression_Prediction.png'.format('.', self.datasetName, self.algoname,
-                                                                            self.datasetName, self.algoname)
+        filename = '{}/images/{}/{}/{}_{}_Regression_Prediction{}.png'.format('.', self.datasetName, self.algoname,
+                                                                              self.datasetName, self.algoname, prefix)
         plt.savefig(filename, format='png', dpi=150)
         plt.close()
+
+    def dumpValidationData(self, paramname, paramvalues, trainingValues, testValues):
+        model_df = pd.DataFrame(paramvalues, columns=['model value'])
+        train_df = pd.DataFrame(trainingValues, columns=['train mean'])
+        test_df = pd.DataFrame(testValues, columns=['test mean'])
+        model_df = pd.concat([model_df, train_df], axis=1)
+        model_df = pd.concat([model_df, test_df], axis=1)
+        model_df.to_csv('{}/images/{}/{}/{}_{}_{}_val_dump.csv'.format('.', self.datasetName, self.algoname,
+                                                                    self.datasetName, self.algoname, paramname))
+
+    def doGridSearch(self):
+        # parameters = {"n_neighbors": np.arange(1, 50, 1)}
+        parameters = {"n_neighbors":np.arange(1,50,1), "metric":['manhattan', 'chebyshev', 'euclidean']}
+
+        clf = GridSearchCV(self.classifier, parameters, refit=True, cv=self.cv)
+        clf.fit(self.X_train, self.y_train)
+        a = pd.DataFrame(clf.best_params_, index=[0])
+        a.to_csv('{}/images/{}/{}/{}_{}_gridsearch.csv'.format('.', self.datasetName, self.algoname,
+                                                                       self.datasetName, self.algoname))
+        self.classifier = clf.best_estimator_
+        self.classifier.set_params(**clf.best_params_)
+        timing.getTimingData(self.X_train, self.y_train, self.classifier, self.algoname, self.datasetName,prefix='GS')
+        self.classifier.fit(self.X_train, self.y_train)
+        self.generateFinalAccuracy(prefix='GS')
+        self.generateFinalLC(prefix='GS')

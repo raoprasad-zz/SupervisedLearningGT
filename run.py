@@ -29,6 +29,7 @@ if __name__ == '__main__':
     parser.add_argument('--ltr', action='store_true', help='Run on letter dataset')
     parser.add_argument('--generateGraph', action='store_true', help='Learn on all dataset')
     parser.add_argument('--generateModel', action='store_true', help='Final model on all dataset')
+    parser.add_argument('--search', action='store_true', help='Grid search')
 
     args = parser.parse_args()
     alllearners = set()
@@ -55,5 +56,7 @@ if __name__ == '__main__':
         lrnr.loadData()
         if args.generateGraph:
             lrnr.learn()
+        if args.search:
+            lrnr.doGridSearch()
         if args.generateModel:
             lrnr.generateFinalModel()

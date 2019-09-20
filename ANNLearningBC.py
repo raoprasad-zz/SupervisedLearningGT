@@ -9,6 +9,7 @@ from sklearn.model_selection import learning_curve
 from matplotlib.ticker import MaxNLocator
 from sklearn.model_selection import validation_curve
 from sklearn.model_selection import GridSearchCV
+import timing
 from sklearn.neural_network import MLPClassifier as mlpc
 import itertools
 
@@ -192,9 +193,8 @@ class annLearnerBC():
         train_scores_std = np.std(train_scores, axis=1)
         test_scores_mean = np.mean(test_scores, axis=1)
         test_scores_std = np.std(test_scores, axis=1)
+        self.dumpValidationData(param_name, param_range, train_scores_mean, test_scores_mean)
         ax = plt.figure().gca()
-        if x_scale is not None:
-            ax.set_xscale(x_scale)
         plt.title("Validation Curve - " + self.datasetName + '-' + self.algoname)
         plt.xlabel(param_name)
         plt.ylabel("Score")
@@ -238,16 +238,23 @@ class annLearnerBC():
 
     def generateFinalModel(self):
         params = {'activation':6.95192796e-05}
-        self.classifier.set_params(params)
-        self.plot_learning_curve(self.classifier, "Optimised Learning curve - " + self.datasetName + '-' + self.algoname, self.X_train,
+        self.classifier.set_params(**params)
+        timing.getTimingData(self.X_train, self.y_train,self.classifier,self.algoname, self.datasetName)
+        self.classifier.fit(self.X_train, self.y_train)
+        self.generateFinalAccuracy()
+        self.generateFinalLC()
+
+    def generateFinalLC(self, prefix=''):
+        self.plot_learning_curve(self.classifier,
+                                 prefix + "Optimised Learning curve - " + self.datasetName + '-' + self.algoname, self.X_train,
                                  self.y_train,
                                  cv=self.cv)
-        filename = '{}/images/{}/{}/{}_{}_LC(optimized).png'.format('.', self.datasetName, self.algoname,
-                                                                    self.datasetName, self.algoname)
+        filename = '{}/images/{}/{}/{}_{}_LC({}optimized).png'.format('.', self.datasetName, self.algoname,
+                                                                    self.datasetName, self.algoname, prefix)
         plt.savefig(filename, format='png', dpi=150)
         plt.close()
 
-        self.classifier.fit(self.X_train, self.y_train)
+    def generateFinalAccuracy(self, prefix=''):
         y_pred = self.classifier.predict(self.X_test)
         np.set_printoptions(precision=2)
 
@@ -257,15 +264,39 @@ class annLearnerBC():
         self.plot_confusion_matrix(self.y_test, y_pred, uniq,
                                    title='Confusion matrix, without normalization')
 
-        filename = '{}/images/{}/{}/{}_{}_CM.png'.format('.', self.datasetName, self.algoname, self.datasetName,
-                                                         self.algoname)
+        filename = '{}/images/{}/{}/{}_{}_CM_{}.png'.format('.', self.datasetName, self.algoname, self.datasetName,
+                                                         self.algoname, prefix)
         plt.savefig(filename, format='png', dpi=150, bbox_inches='tight')
 
         # Plot normalized confusion matrix
         self.plot_confusion_matrix(self.y_test, y_pred, uniq, normalize=True,
                                    title='Normalized confusion matrix')
 
-        filename = '{}/images/{}/{}/{}_{}_CM_Normalized.png'.format('.', self.datasetName, self.algoname,
-                                                                    self.datasetName, self.algoname)
+        filename = '{}/images/{}/{}/{}_{}_CM_Normalized_{}.png'.format('.', self.datasetName, self.algoname,
+                                                                    self.datasetName, self.algoname, prefix)
         plt.savefig(filename, format='png', dpi=250, bbox_inches='tight')
         plt.close()
+
+    def dumpValidationData(self, paramname, paramvalues, trainingValues, testValues):
+        model_df = pd.DataFrame(paramvalues, columns=['model value'])
+        train_df = pd.DataFrame(trainingValues, columns=['train mean'])
+        test_df = pd.DataFrame(testValues, columns=['test mean'])
+        model_df = pd.concat([model_df, train_df], axis=1)
+        model_df = pd.concat([model_df, test_df], axis=1)
+        model_df.to_csv('{}/images/{}/{}/{}_{}_{}_val_dump.csv'.format('.', self.datasetName, self.algoname,
+                                                                    self.datasetName, self.algoname, paramname))
+
+    def doGridSearch(self):
+        parameters = {'solver':['lbfgs', 'adam'], "alpha": np.logspace(-5, 3, 20),'max_iter':np.arange(2, 1000, 10)}
+
+        clf = GridSearchCV(self.classifier, parameters, refit=True, cv=self.cv)
+        clf.fit(self.X_train, self.y_train)
+        a = pd.DataFrame(clf.best_params_, index=[0])
+        a.to_csv('{}/images/{}/{}/{}_{}_gridsearch.csv'.format('.', self.datasetName, self.algoname,
+                                                                       self.datasetName, self.algoname))
+        self.classifier = clf.best_estimator_
+        self.classifier.set_params(**clf.best_params_)
+        timing.getTimingData(self.X_train, self.y_train, self.classifier, self.algoname, self.datasetName,prefix='GS')
+        self.classifier.fit(self.X_train, self.y_train)
+        self.generateFinalAccuracy(prefix='GS')
+        self.generateFinalLC(prefix='GS')
