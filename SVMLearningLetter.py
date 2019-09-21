@@ -12,6 +12,7 @@ from sklearn.model_selection import validation_curve
 from sklearn.model_selection import GridSearchCV
 import timing
 from sklearn import svm
+import json
 
 class SVMLearnerLetter():
     def __init__(self, pathToData):
@@ -229,7 +230,7 @@ class SVMLearnerLetter():
     def generateFinalModel(self):
         params = {'max_depth':23, 'class_weight':'balanced'}
         self.classifier.set_params(**params)
-        timing.getTimingData(self.X_train, self.y_train,self.classifier,self.algoname, self.datasetName)
+        #timing.getTimingData(self.X_train, self.y_train,self.classifier,self.algoname, self.datasetName)
         self.classifier.fit(self.X_train, self.y_train)
         self.generateFinalAccuracy()
         self.generateFinalLC()
@@ -280,9 +281,12 @@ class SVMLearnerLetter():
 
         clf = GridSearchCV(self.classifier, parameters, refit=True, cv=self.cv)
         clf.fit(self.X_train, self.y_train)
-        a = pd.DataFrame(clf.best_params_, index=[0])
-        a.to_csv('{}/images/{}/{}/{}_{}_gridsearch.csv'.format('.', self.datasetName, self.algoname,
-                                                                       self.datasetName, self.algoname))
+        js = json.dumps(clf.best_params_)
+        filename = '{}/images/{}/{}/{}_{}_GSP.json'.format('.', self.datasetName, self.algoname,
+                                                           self.datasetName, self.algoname)
+        f = open(filename, "w")
+        f.write(js)
+        f.close()
         self.classifier = clf.best_estimator_
         self.classifier.set_params(**clf.best_params_)
         timing.getTimingData(self.X_train, self.y_train, self.classifier, self.algoname, self.datasetName,prefix='GS')

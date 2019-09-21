@@ -236,7 +236,7 @@ class boostingLearnerBC():
     def generateFinalModel(self):
         params={'n_neighbors':9}
         self.classifier.set_params(**params)
-        timing.getTimingData(self.X_train, self.y_train,self.classifier,self.algoname, self.datasetName)
+        #timing.getTimingData(self.X_train, self.y_train,self.classifier,self.algoname, self.datasetName)
         self.classifier.fit(self.X_train, self.y_train)
         self.generateFinalAccuracy()
         self.generateFinalLC()

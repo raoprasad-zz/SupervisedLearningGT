@@ -234,7 +234,7 @@ class boostingLearnerLetter():
     def generateFinalModel(self):
         params={'n_neighbors':9}
         self.classifier.set_params(**params)
-        timing.getTimingData(self.X_train, self.y_train,self.classifier,self.algoname, self.datasetName)
+        #timing.getTimingData(self.X_train, self.y_train,self.classifier,self.algoname, self.datasetName)
         self.classifier.fit(self.X_train, self.y_train)
         self.generateFinalAccuracy()
         self.generateFinalLC()
@@ -282,7 +282,8 @@ class boostingLearnerLetter():
                                                                     self.datasetName, self.algoname, paramname))
 
     def doGridSearch(self):
-        parameters = {'base_estimator__max_depth':np.arange(5, 20, 1)}
+        parameters = {'base_estimator__max_depth':np.arange(5, 22, 1),'learning_rate': np.arange(.0001,.9,.05),
+                      'n_estimators': np.arange(10,300,20)}
 
         clf = GridSearchCV(self.classifier, parameters, refit=True, cv=self.cv)
         clf.fit(self.X_train, self.y_train)

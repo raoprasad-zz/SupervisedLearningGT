@@ -232,7 +232,7 @@ class SVMLearnerBC():
     def generateFinalModel(self):
         params={'max_depth':6, 'class_weight':'balanced'}
         self.classifier.set_params(**params)
-        timing.getTimingData(self.X_train, self.y_train,self.classifier,self.algoname, self.datasetName)
+        #timing.getTimingData(self.X_train, self.y_train,self.classifier,self.algoname, self.datasetName)
         self.classifier.fit(self.X_train, self.y_train)
         self.generateFinalAccuracy()
         self.generateFinalLC()

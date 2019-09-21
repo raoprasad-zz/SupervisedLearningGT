@@ -12,13 +12,14 @@ from sklearn.neural_network import MLPRegressor as mlpc
 from sklearn.utils.multiclass import unique_labels
 from sklearn.model_selection import GridSearchCV
 import timing
+import json
 
 class annLearnerAbalone():
     def __init__(self, pathToData):
         self.dataFilePath = pathToData
         self.algoname = 'ANN'
         self.datasetName = 'Abalone'
-        self.classifier = mlpc()
+        self.classifier = mlpc(early_stopping=True, learning_rate='adaptive')
         self.cv = 5;
 
     def loadData(self):
@@ -238,11 +239,11 @@ class annLearnerAbalone():
 
     def generateFinalModel(self):
         dimension = self.features.shape[1]
-        self.classifier.set_params(hidden_layer_sizes=(dimension, dimension*2))
+        self.classifier.set_params(hidden_layer_sizes=(dimension, dimension, dimension))
         self.classifier.set_params(solver='lbfgs')
         params = {'activation':'relu', 'max_iter':3000, 'alpha':4.28133240e-01}
         self.classifier.set_params(**params)
-        timing.getTimingData(self.X_train, self.y_train,self.classifier,self.algoname, self.datasetName)
+        #timing.getTimingData(self.X_train, self.y_train,self.classifier,self.algoname, self.datasetName)
         self.classifier.fit(self.X_train, self.y_train)
         self.generateFinalAccuracy()
         self.generateFinalLC()
@@ -288,9 +289,13 @@ class annLearnerAbalone():
 
         clf = GridSearchCV(self.classifier, parameters, refit=True, cv=self.cv)
         clf.fit(self.X_train, self.y_train)
-        a = pd.DataFrame(clf.best_params_, index=[0])
-        a.to_csv('{}/images/{}/{}/{}_{}_gridsearch.csv'.format('.', self.datasetName, self.algoname,
-                                                                       self.datasetName, self.algoname))
+        js = json.dumps(clf.best_params_)
+        filename = '{}/images/{}/{}/{}_{}_GSP.json'.format('.', self.datasetName, self.algoname,
+                                                                              self.datasetName, self.algoname)
+        f = open(filename, "w")
+        f.write(js)
+        f.close()
+
         self.classifier = clf.best_estimator_
         self.classifier.set_params(**clf.best_params_)
         timing.getTimingData(self.X_train, self.y_train, self.classifier, self.algoname, self.datasetName,prefix='GS')

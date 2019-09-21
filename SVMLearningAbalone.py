@@ -13,6 +13,7 @@ from sklearn.utils.multiclass import unique_labels
 from sklearn import svm
 from sklearn.model_selection import GridSearchCV
 import timing
+import json
 
 class SVMLearnerAbalone():
     def __init__(self, pathToData):
@@ -210,29 +211,33 @@ class SVMLearnerAbalone():
                          test_scores_mean + test_scores_std, alpha=0.2,
                          color="navy")
         plt.legend(loc="best")
-        filename = '{}/images/{}/{}/{}_{}_{}_MCC.png'.format('.', self.datasetName, self.algoname,self.datasetName, self.algoname, param_name)
+        filename = '{}/images/{}/{}/{}_{}_{}_MCC.png'.format('.', self.datasetName, self.algoname,self.datasetName, self.algoname, self.kernel + '-' + param_name)
         plt.savefig(filename, format='png', dpi=150)
 
         plt.close()
 
     def learn(self):
-        self.plot_learning_curve(self.classifier, "Learning curve - " + self.datasetName + '-' + self.algoname, self.X_train, self.y_train, cv=self.cv)
-        filename = '{}/images/{}/{}/{}_{}_LC.png'.format('.', self.datasetName, self.algoname, self.datasetName,
-                                                         self.algoname)
-        plt.savefig(filename, format='png', dpi=150)
-        plt.close()
+        for kernelName in ['linear', 'rbf', 'poly']:
+            self.kernel = kernelName
+            params = {'kernel': kernelName}
+            self.classifier.set_params(**params)
+            self.plot_learning_curve(self.classifier, kernelName + " Learning curve - " + self.datasetName + '-' + self.algoname, self.X_train, self.y_train, cv=self.cv)
+            filename = '{}/images/{}/{}/{}_{}_LC_{}.png'.format('.', self.datasetName, self.algoname, self.datasetName,
+                                                             self.algoname, kernelName)
+            plt.savefig(filename, format='png', dpi=150)
+            plt.close()
 
-        self.plot_validation_curve(self.classifier, self.X_train, self.y_train,
-                                   "gamma", np.arange(1 / self.features.shape[1], 2.1, 0.2), cv=self.cv)
-        self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "C",
-                                   np.arange(0.001, 2.5, 0.25), cv=self.cv)
-        self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "tol",
-                                   np.arange(1e-8, 1e-1, 0.01), cv=self.cv)
-        self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "max_iter",
-                                   [-1, int((1e6 / self.features.shape[0]) / .8) + 1], cv=self.cv)
+            self.plot_validation_curve(self.classifier, self.X_train, self.y_train,
+                                       "gamma", np.arange(1 / self.features.shape[1], 2.1, 0.2), cv=self.cv)
+            self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "C",
+                                       np.arange(0.001, 3.0, 0.25), cv=self.cv)
+            self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "tol",
+                                       np.arange(1e-8, 1e-1, 0.01), cv=self.cv)
+            self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "max_iter",
+                                       [-1, int((1e6 / self.features.shape[0]) / .8) + 1], cv=self.cv)
 
     def generateFinalModel(self):
-        params = {'max_depth':5}
+        params = {'kernel':'rbf', "C": 1, "gamma":'scale'}
         self.cv=5
         self.classifier.set_params(**params)
         timing.getTimingData(self.X_train, self.y_train,self.classifier,self.algoname, self.datasetName)
@@ -278,9 +283,12 @@ class SVMLearnerAbalone():
         parameters = {"C": np.arange(0.001, 2.5, 0.25), "gamma": np.arange(1 / self.features.shape[1], 2.1, 0.1)}
         clf = GridSearchCV(self.classifier, parameters, refit=True, cv=self.cv)
         clf.fit(self.X_train, self.y_train)
-        a = pd.DataFrame(clf.best_params_, index=[0])
-        a.to_csv('{}/images/{}/{}/{}_{}_gridsearch.csv'.format('.', self.datasetName, self.algoname,
-                                                                       self.datasetName, self.algoname))
+        js = json.dumps(clf.best_params_)
+        filename = '{}/images/{}/{}/{}_{}_GSP.json'.format('.', self.datasetName, self.algoname,
+                                                           self.datasetName, self.algoname)
+        f = open(filename, "w")
+        f.write(js)
+        f.close()
         self.classifier = clf.best_estimator_
         self.classifier.set_params(**clf.best_params_)
         timing.getTimingData(self.X_train, self.y_train, self.classifier, self.algoname, self.datasetName,prefix='GS')

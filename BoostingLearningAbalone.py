@@ -20,10 +20,7 @@ class boostingLearnerAbalone():
         self.algoname = 'Boosting'
         self.datasetName = 'Abalone'
         self.baseEstimater = dtr()
-        # x = {'base_estimator': self.baseEstimater,
-        #      'base_estimator__max_depth': 5}
         self.classifier = abr(base_estimator=self.baseEstimater)
-        # self.classifier.set_params(**x)
         self.cv = 5;
 
     def loadData(self):
@@ -229,15 +226,16 @@ class boostingLearnerAbalone():
         plt.close()
 
         self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "n_estimators",
-                                   [1, 2, 5, 10, 20, 30, 45, 60, 80, 90, 100], cv=self.cv)
+                                   np.arange(10,300,20), cv=self.cv)
         self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "learning_rate",
-                                   [(2 ** x) / 100 for x in range(7)] + [1], cv=self.cv)
+                                   np.arange(.0001,.9,.05), cv=self.cv)
         self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "base_estimator__max_depth",
                                    np.arange(1, 30, 1), cv=self.cv)
 
 
     def generateFinalModel(self):
-        params={'learning_rate':0.04, 'n_estimators':5}
+        self.cv=5
+        params={'base_estimator__max_depth':5, 'n_estimators':220, 'learning_rate':.0001}
         self.classifier.set_params(**params)
         timing.getTimingData(self.X_train, self.y_train,self.classifier,self.algoname, self.datasetName)
         self.classifier.fit(self.X_train, self.y_train)
@@ -278,10 +276,14 @@ class boostingLearnerAbalone():
                                                                     self.datasetName, self.algoname, paramname))
 
     def doGridSearch(self):
+        # params = {'base_estimator__max_depth': 10}
+        # self.classifier.set_params(**params)
         # parameters = {'base_estimator__max_depth': np.arange(2, 12, 1)}
-        parameters = {'base_estimator__max_depth':np.arange(2, 12, 1),
-                      'base_estimator__min_samples_split':np.arange(2, 100, 1)}
-
+        # parameters = {'base_estimator__max_depth':np.arange(2, 12, 1),
+        #               'base_estimator__min_samples_split':np.arange(2, 100, 1)}
+        # parameters = {'base_estimator__max_depth': [7,8,9,10], 'learning_rate':[.1, .01, .001, .0001], 'n_estimators':[100, 110,120,130,150,170,200]}
+        parameters = {'base_estimator__max_depth': [3,4,5], 'learning_rate': np.arange(.0001,.9,.05),
+                      'n_estimators': np.arange(10,300,20)}
         clf = GridSearchCV(self.classifier, parameters, refit=True, cv=self.cv)
         clf.fit(self.X_train, self.y_train)
         a = pd.DataFrame(clf.best_params_, index=[0])

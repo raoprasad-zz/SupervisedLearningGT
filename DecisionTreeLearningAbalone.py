@@ -224,8 +224,9 @@ class decisionTreeLearnerAbalone():
         self.plot_validation_curve(self.classifier,self.X_train,self.y_train,"min_samples_split", np.arange(2,100,1), cv=self.cv)
 
     def generateFinalModel(self):
+        # parameters = {'max_depth': np.arange(3, 15, 1), 'min_samples_split': np.arange(2, 100, 1)}
+        # params = {'max_depth':6}
         params = {'max_depth':5}
-        self.cv=5
         self.classifier.set_params(**params)
         timing.getTimingData(self.X_train, self.y_train,self.classifier,self.algoname, self.datasetName)
         self.classifier.fit(self.X_train, self.y_train)

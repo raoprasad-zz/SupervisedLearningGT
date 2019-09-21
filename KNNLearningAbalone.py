@@ -223,6 +223,8 @@ class knnLearnerAbalone():
         plt.savefig(filename, format='png', dpi=150)
         plt.close()
 
+        self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "p", np.arange(1,50,1),
+                                   cv=self.cv)
         self.plot_validation_curve(self.classifier, self.X_train, self.y_train, "weights", ['uniform', 'distance'],
                                    cv=self.cv)
         self.plot_validation_curve(self.classifier,self.X_train,self.y_train,"n_neighbors", np.arange(1,50,1),
@@ -231,7 +233,7 @@ class knnLearnerAbalone():
                                    "metric", ['manhattan', 'chebyshev', 'euclidean'], cv=self.cv)
 
     def generateFinalModel(self):
-        params = {'n_neighbors':18, 'weights':'uniform'}
+        params = {'n_neighbors':12, 'weights':'uniform'}
         self.classifier.set_params(**params)
         timing.getTimingData(self.X_train, self.y_train,self.classifier,self.algoname, self.datasetName)
         self.classifier.fit(self.X_train, self.y_train)
