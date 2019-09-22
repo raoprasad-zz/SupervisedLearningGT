@@ -238,12 +238,9 @@ class annLearnerAbalone():
                                                                   3000], cv=self.cv)
 
     def generateFinalModel(self):
-        dimension = self.features.shape[1]
-        self.classifier.set_params(hidden_layer_sizes=(dimension, dimension, dimension))
-        self.classifier.set_params(solver='lbfgs')
-        params = {'activation':'relu', 'max_iter':3000, 'alpha':4.28133240e-01}
+        params = {"alpha": 0.0004832930238571752, "hidden_layer_sizes": [20, 20, 20], "max_iter": 256}
         self.classifier.set_params(**params)
-        #timing.getTimingData(self.X_train, self.y_train,self.classifier,self.algoname, self.datasetName)
+        timing.getTimingData(self.X_train, self.y_train,self.classifier,self.algoname, self.datasetName)
         self.classifier.fit(self.X_train, self.y_train)
         self.generateFinalAccuracy()
         self.generateFinalLC()

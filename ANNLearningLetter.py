@@ -233,9 +233,9 @@ class annLearnerLetter():
                                                                   3000], cv=self.cv)
 
     def generateFinalModel(self):
-        params = {'max_iter':128, 'alpha':1.00000000e-05}
+        params = {"alpha": 0.003359818286283781, "hidden_layer_sizes": [32, 32, 32], "max_iter": 128}
         self.classifier.set_params(**params)
-        #timing.getTimingData(self.X_train, self.y_train,self.classifier,self.algoname, self.datasetName)
+        timing.getTimingData(self.X_train, self.y_train,self.classifier,self.algoname, self.datasetName)
         self.classifier.fit(self.X_train, self.y_train)
         self.generateFinalAccuracy()
         self.generateFinalLC()

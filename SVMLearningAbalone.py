@@ -237,7 +237,7 @@ class SVMLearnerAbalone():
                                        [-1, int((1e6 / self.features.shape[0]) / .8) + 1], cv=self.cv)
 
     def generateFinalModel(self):
-        params = {'kernel':'rbf', "C": 1, "gamma":'scale'}
+        params = {"C": 2.251, "gamma": 0.1}
         self.cv=5
         self.classifier.set_params(**params)
         timing.getTimingData(self.X_train, self.y_train,self.classifier,self.algoname, self.datasetName)

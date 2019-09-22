@@ -1,2 +1,2 @@
-,n_neighbors
-0,12
+,metric,n_neighbors
+0,euclidean,12

@@ -1,21 +1,15 @@
 import argparse
 
-from DecisionTreeLearningBC import decisionTreeLearnerBC
-from DecisionTreeLearningLetter import decisionTreeLearnerLetter
-from DecisionTreeLearningAbalone import decisionTreeLearnerAbalone
-from KNNLearningBC import knnLearnerBC
-from KNNLearningAbalone import knnLearnerAbalone
-from KNNLearningLetter import knnLearnerLetter
-from BoostingLearningBC import boostingLearnerBC
-from BoostingLearningAbalone import boostingLearnerAbalone
-from BoostingLearningLetter import boostingLearnerLetter
-from ANNLearningBC import annLearnerBC
 from ANNLearningAbalone import annLearnerAbalone
 from ANNLearningLetter import annLearnerLetter
-from SVMLearningBC import SVMLearnerBC
+from BoostingLearningAbalone import boostingLearnerAbalone
+from BoostingLearningLetter import boostingLearnerLetter
+from DecisionTreeLearningAbalone import decisionTreeLearnerAbalone
+from DecisionTreeLearningLetter import decisionTreeLearnerLetter
+from KNNLearningAbalone import knnLearnerAbalone
+from KNNLearningLetter import knnLearnerLetter
 from SVMLearningAbalone import SVMLearnerAbalone
 from SVMLearningLetter import SVMLearnerLetter
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Specify learning algorithm')

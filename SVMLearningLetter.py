@@ -228,9 +228,9 @@ class SVMLearnerLetter():
                                    [-1, int((1e6/self.features.shape[0])/.8)+1], cv=self.cv)
 
     def generateFinalModel(self):
-        params = {'max_depth':23, 'class_weight':'balanced'}
+        params = {"C": 2.251, "gamma": 0.2625,'class_weight':'balanced'}
         self.classifier.set_params(**params)
-        #timing.getTimingData(self.X_train, self.y_train,self.classifier,self.algoname, self.datasetName)
+        timing.getTimingData(self.X_train, self.y_train,self.classifier,self.algoname, self.datasetName)
         self.classifier.fit(self.X_train, self.y_train)
         self.generateFinalAccuracy()
         self.generateFinalLC()

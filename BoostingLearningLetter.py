@@ -232,9 +232,9 @@ class boostingLearnerLetter():
                                    np.arange(1, 30, 1), cv=self.cv)
 
     def generateFinalModel(self):
-        params={'n_neighbors':9}
+        params={'base_estimator__max_depth':20, 'n_estimators':100, 'learning_rate':.01}
         self.classifier.set_params(**params)
-        #timing.getTimingData(self.X_train, self.y_train,self.classifier,self.algoname, self.datasetName)
+        timing.getTimingData(self.X_train, self.y_train,self.classifier,self.algoname, self.datasetName)
         self.classifier.fit(self.X_train, self.y_train)
         self.generateFinalAccuracy()
         self.generateFinalLC()

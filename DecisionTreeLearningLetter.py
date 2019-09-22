@@ -222,7 +222,7 @@ class decisionTreeLearnerLetter():
                                    np.arange(2, 100, 1), cv=self.cv)
 
     def generateFinalModel(self):
-        params = {'max_depth':23, 'class_weight':'balanced'}
+        params = {'max_depth':22, 'class_weight':'balanced'}
         self.classifier.set_params(**params)
         timing.getTimingData(self.X_train, self.y_train,self.classifier,self.algoname, self.datasetName)
         self.classifier.fit(self.X_train, self.y_train)
