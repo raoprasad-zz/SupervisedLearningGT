@@ -1,0 +1,6 @@
+Citations:
+
+[1] Dua, D. and Graff, C. (2019). UCI Machine Learning Repository [https://archive.ics.uci.edu/ml/datasets/Abalone]. Irvine, CA: University of California, School of Information and Computer Science. 
+[2] Dua, D. and Graff, C. (2019). UCI Machine Learning Repository [https://archive.ics.uci.edu/ml/datasets/Letter+Recognition]. Irvine, CA: University of California, School of Information and Computer Science.
+[3] Dua, D. and Graff, C. (2019). UCI Machine Learning Repository [https://archive.ics.uci.edu/ml/datasets/Metro+Interstate+Traffic+Volume]. Irvine, CA: University of California, School of Information and Computer Science. Traffic data from MN Department of Transportation. Weather data from OpenWeatherMap
+[4] Dua, D. and Graff, C. (2019). UCI Machine Learning Repository [https://archive.ics.uci.edu/ml/datasets/Breast+Cancer+Wisconsin+(Diagnostic)]. Irvine, CA: University of California, School of Information and Computer Science. 
